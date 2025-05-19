@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "@/components/ui/use-toast"
+import { AvatarUpload } from "@/components/avatar-upload"
 
 const profileFormSchema = z.object({
   username: z.string().min(2, {
@@ -159,6 +160,14 @@ export default function SettingsProfilePage() {
         </p>
       </div>
       <Separator />
+      
+      {/* Avatar Upload Section */}
+      <div>
+        <h4 className="text-sm font-medium mb-2">Profile Picture</h4>
+        <AvatarUpload />
+      </div>
+      <Separator />
+      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <FormField

@@ -24,6 +24,8 @@ import {
   UsersIcon,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
+import { useCurrentUserName } from "@/hooks/use-current-user-name"
+import { supabase } from "@/lib/supabase/client"
 
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
@@ -42,11 +44,6 @@ import {
 } from "@/components/ui/sidebar"
 
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "Dashboard",
@@ -95,12 +92,43 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
+  const [user, setUser] = React.useState<any>({
+    name: "",
+    email: "",
+    avatar: ""
+  })
+  
+  React.useEffect(() => {
+    async function getUserData() {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      
+      if (authUser) {
+        setUser({
+          name: authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || 'User',
+          email: authUser.email || '',
+          avatar: '/avatars/shadcn.jpg' // This is just a fallback, our CurrentUserAvatar will handle the real avatar
+        })
+      }
+    }
+    
+    getUserData()
+  }, [])
   
   // Create a new array with isActive property set based on current path
   const navMainWithActive = React.useMemo(() => {
     return data.navMain.map(item => ({
       ...item,
       isActive: pathname === item.url
+    }))
+  }, [pathname])
+  
+  // Create navSecondary with isActive for settings pages
+  const navSecondaryWithActive = React.useMemo(() => {
+    return data.navSecondary.map(item => ({
+      ...item,
+      isActive: item.title === "Settings" 
+        ? pathname === "/settings" || pathname.startsWith("/settings/") 
+        : pathname === item.url
     }))
   }, [pathname])
   
@@ -123,10 +151,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMainWithActive} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavSecondary items={navSecondaryWithActive} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )

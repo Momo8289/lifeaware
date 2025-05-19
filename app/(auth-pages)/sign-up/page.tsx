@@ -7,6 +7,7 @@ import AuthLayout from '../auth-layout';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { toast } from '@/components/ui/use-toast';
 
 export default function SignUpPage() {
   const [name, setName] = useState('');
@@ -34,7 +35,16 @@ export default function SignUpPage() {
     if (error) {
       setError(error.message);
     } else {
-      router.push('/');
+      // Show toast notification about email verification
+      toast({
+        title: "Verification email sent",
+        description: `We've sent a confirmation email to ${email}. Please check your inbox to complete your registration.`,
+      });
+      
+      // Delay redirect slightly to allow user to see the toast
+      setTimeout(() => {
+        router.push('/sign-in');
+      }, 2000);
     }
   }
 
