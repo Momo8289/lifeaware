@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useIsMobile } from "@/hooks/use-mobile"
 import MicrosoftLogo from "./icons/microsoft-logo"
+import { getURL } from "@/utils/helpers"
 
 export function LoginForm({
   className,
@@ -40,6 +41,7 @@ export function LoginForm({
       provider: 'azure',
       options: {
         scopes: 'email',
+        redirectTo: getURL(),
       }
     })
     setOAuthLoading(false)

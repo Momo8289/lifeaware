@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/use-toast';
 import MicrosoftLogo from '@/components/icons/microsoft-logo';
+import { getURL } from '@/utils/helpers';
 
 export default function SignUpPage() {
   const [name, setName] = useState('');
@@ -31,7 +32,10 @@ export default function SignUpPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: name } },
+      options: { 
+        data: { display_name: name },
+        emailRedirectTo: `${getURL()}auth/callback`
+      },
     });
     setLoading(false);
     if (error) {
@@ -57,6 +61,7 @@ export default function SignUpPage() {
       provider: 'azure',
       options: {
         scopes: 'email',
+        redirectTo: getURL(),
       }
     });
     setOAuthLoading(false);
