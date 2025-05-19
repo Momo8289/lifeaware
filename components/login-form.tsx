@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useIsMobile } from "@/hooks/use-mobile"
+import MicrosoftLogo from "./icons/microsoft-logo"
 
 export function LoginForm({
   className,
@@ -16,6 +17,7 @@ export function LoginForm({
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [oauthLoading, setOAuthLoading] = useState(false)
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -28,6 +30,21 @@ export function LoginForm({
       setError(error.message)
     } else {
       router.push("/")
+    }
+  }
+
+  async function handleMicrosoftSignIn() {
+    setError("")
+    setOAuthLoading(true)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'azure',
+      options: {
+        scopes: 'email',
+      }
+    })
+    setOAuthLoading(false)
+    if (error) {
+      setError(error.message)
     }
   }
 
@@ -75,6 +92,27 @@ export function LoginForm({
             {loading ? "Signing In..." : "Sign In"}
           </Button>
         </form>
+        
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t"></span>
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+          </div>
+        </div>
+        
+        <Button 
+          variant="outline" 
+          type="button" 
+          className="w-full" 
+          onClick={handleMicrosoftSignIn}
+          disabled={oauthLoading}
+        >
+          <MicrosoftLogo className="mr-2" />
+          {oauthLoading ? "Connecting..." : "Login with Microsoft"}
+        </Button>
+        
         <div className="text-center text-sm">
           Don&apos;t have an account?{" "}
           <Link href="/sign-up" className="underline underline-offset-4">

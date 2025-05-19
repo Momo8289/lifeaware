@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/use-toast';
+import MicrosoftLogo from '@/components/icons/microsoft-logo';
 
 export default function SignUpPage() {
   const [name, setName] = useState('');
@@ -16,6 +17,7 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOAuthLoading] = useState(false);
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -45,6 +47,21 @@ export default function SignUpPage() {
       setTimeout(() => {
         router.push('/sign-in');
       }, 2000);
+    }
+  }
+
+  async function handleMicrosoftSignIn() {
+    setError('');
+    setOAuthLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'azure',
+      options: {
+        scopes: 'email',
+      }
+    });
+    setOAuthLoading(false);
+    if (error) {
+      setError(error.message);
     }
   }
 
@@ -122,6 +139,27 @@ export default function SignUpPage() {
             {loading ? 'Creating Account...' : 'Create Account'}
           </Button>
         </form>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t"></span>
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+          </div>
+        </div>
+        
+        <Button 
+          variant="outline" 
+          type="button" 
+          className="w-full" 
+          onClick={handleMicrosoftSignIn}
+          disabled={oauthLoading}
+        >
+          <MicrosoftLogo className="mr-2" />
+          {oauthLoading ? "Connecting..." : "Login with Microsoft"}
+        </Button>
+
         <div className="text-center text-sm">
           Already have an account?{' '}
           <Link href="/sign-in" className="text-primary hover:underline">
