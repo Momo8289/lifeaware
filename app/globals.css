@@ -20,6 +20,10 @@
     --accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 9%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
     --ring: 0 0% 3.9%;
@@ -56,6 +60,10 @@
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
+    --warning: 48 96% 59%;
+    --warning-foreground: 0 0% 9%;
+    --success: 142 69% 50%;
+    --success-foreground: 0 0% 9%;
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
@@ -82,4 +90,18 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Add custom styles for react-calendar-heatmap */
+.react-calendar-heatmap .color-scale-complete { 
+  fill: hsl(var(--success)); 
+}
+.react-calendar-heatmap .color-scale-miss { 
+  fill: hsl(var(--destructive)); 
+}
+.react-calendar-heatmap .color-scale-skip { 
+  fill: hsl(var(--warning)); 
+}
+.react-calendar-heatmap .color-empty { 
+  fill: var(--background); 
 }

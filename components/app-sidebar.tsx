@@ -118,7 +118,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navMainWithActive = React.useMemo(() => {
     return data.navMain.map(item => ({
       ...item,
-      isActive: pathname === item.url
+      isActive: item.title === "Habits" 
+        ? pathname === item.url || pathname.startsWith(`${item.url}/`)
+        : pathname === item.url
     }))
   }, [pathname])
   
