@@ -28,6 +28,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Toggle } from "@/components/ui/toggle"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 // List of common timezones
 const TIMEZONES = [
@@ -47,6 +55,11 @@ const TIMEZONES = [
 
 const accountFormSchema = z.object({
   email: z.string().email(),
+  display_name: z.string().min(2, {
+    message: "Display name must be at least 2 characters"
+  }).max(50, {
+    message: "Display name must not be longer than 50 characters"
+  }).optional(),
   date_of_birth: z.string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, {
       message: "Date must be in YYYY-MM-DD format"
@@ -63,6 +76,8 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true)
   const [saveLoading, setSaveLoading] = useState(false)
   const [emailChangeLoading, setEmailChangeLoading] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const router = useRouter()
@@ -71,6 +86,7 @@ export default function AccountPage() {
     resolver: zodResolver(accountFormSchema),
     defaultValues: {
       email: "",
+      display_name: "",
       date_of_birth: "",
       timezone: "UTC",
       unit_system: "metric" as const,
@@ -104,6 +120,10 @@ export default function AccountPage() {
       
       // Set form values
       form.setValue("email", user.email || "")
+      // Set display name from auth.users metadata if available
+      if (user.user_metadata && user.user_metadata.display_name) {
+        form.setValue("display_name", user.user_metadata.display_name)
+      }
       
       if (profileData) {
         if (profileData.date_of_birth) {
@@ -133,6 +153,13 @@ export default function AccountPage() {
       if (newEmail !== currentEmail) {
         promises.push(handleEmailChange(newEmail))
       }
+      
+      // Update display name in auth.users table
+      promises.push(
+        supabase.auth.updateUser({
+          data: { display_name: data.display_name || null }
+        })
+      )
       
       // Update profile with date_of_birth and timezone
       promises.push(
@@ -189,6 +216,59 @@ export default function AccountPage() {
     })
   }
 
+  async function deleteAccount() {
+    if (!user) return
+    
+    setDeleteLoading(true)
+    
+    try {
+      // Get the current session with a valid token
+      const { data: sessionData } = await supabase.auth.getSession()
+      const session = sessionData?.session
+      
+      if (!session) {
+        throw new Error('You must be logged in to delete your account')
+      }
+      
+      // Call the edge function directly with explicit parameters
+      const { data, error } = await supabase.functions.invoke(
+        'user-self-deletion',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: {
+            userId: user.id,
+            action: 'delete'
+          }
+        }
+      )
+      
+      if (error) throw error
+      
+      toast({
+        title: "Account deleted",
+        description: "Your account has been permanently deleted.",
+      })
+      
+      // Sign out and redirect to sign-in page
+      await supabase.auth.signOut()
+      router.push("/sign-in")
+    } catch (error: any) {
+      console.error('Error deleting account:', error)
+      toast({
+        title: "Error deleting account",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleteLoading(false)
+      setDeleteDialogOpen(false)
+    }
+  }
+
   if (loading) {
     return <div className="flex items-center justify-center py-10">Loading...</div>
   }
@@ -204,6 +284,26 @@ export default function AccountPage() {
       <Separator />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <FormField
+            control={form.control}
+            name="display_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Display Name</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Your display name" 
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  This is how your name will appear to others.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
           <FormField
             control={form.control}
             name="email"
@@ -396,6 +496,48 @@ export default function AccountPage() {
           </Button>
         </form>
       </Form>
+      
+      <Separator className="my-6" />
+      
+      <div>
+        <h3 className="text-lg font-medium text-destructive">Danger Zone</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Permanently delete your account and all associated data
+        </p>
+        
+        <Button 
+          variant="destructive" 
+          onClick={() => setDeleteDialogOpen(true)}
+        >
+          Delete Account
+        </Button>
+        
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent className="z-[100]">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Delete Account</DialogTitle>
+              <DialogDescription className="mt-2 text-base">
+                Are you sure you want to delete your account?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="mt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setDeleteDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={deleteAccount}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? "Deleting..." : "Delete Account"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 } 
