@@ -10,6 +10,10 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Lifeaware",
   description: "Track your habits, set goals, monitor health metrics, and journal your daily activities in one seamless application.",
+  icons: {
+    icon: '/heart-pulse-color.svg',
+    apple: '/heart-pulse-color.svg',
+  },
 };
 
 export default function RootLayout({
