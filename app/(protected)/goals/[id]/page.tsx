@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -84,8 +85,11 @@ interface GoalWithExtras extends Goal {
   days_remaining: number;
 }
 
-export default function GoalDetailPage({ params }: { params: { id: string } }) {
+export default function GoalDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const resolvedParams = React.use(params);
+  const id = resolvedParams.id;
+  
   const [goal, setGoal] = useState<GoalWithExtras | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -116,7 +120,7 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
         const { data: goalData, error: goalError } = await supabase
           .from('goals')
           .select('*')
-          .eq('id', params.id)
+          .eq('id', id)
           .single();
 
         if (goalError) throw goalError;
@@ -130,7 +134,7 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
         const { data: milestonesData, error: milestonesError } = await supabase
           .from('goal_milestones')
           .select('*')
-          .eq('goal_id', params.id)
+          .eq('goal_id', id)
           .order('target_date', { ascending: true });
 
         if (milestonesError) throw milestonesError;
@@ -139,7 +143,7 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
         const { data: logsData, error: logsError } = await supabase
           .from('goal_logs')
           .select('*')
-          .eq('goal_id', params.id)
+          .eq('goal_id', id)
           .order('log_date', { ascending: false });
 
         if (logsError) throw logsError;
@@ -179,7 +183,7 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
     };
 
     fetchGoalData();
-  }, [params.id, router]);
+  }, [id, router]);
 
   const handleDeleteGoal = async () => {
     try {
@@ -188,7 +192,7 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
       const { error } = await supabase
         .from('goals')
         .delete()
-        .eq('id', params.id);
+        .eq('id', id);
 
       if (error) throw error;
       
@@ -229,7 +233,7 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
       const { error } = await supabase
         .from('goal_logs')
         .insert({
-          goal_id: params.id,
+          goal_id: id,
           log_date: new Date().toISOString().split('T')[0],
           value: newLogValue,
           notes: newLogNotes || null
@@ -284,7 +288,7 @@ export default function GoalDetailPage({ params }: { params: { id: string } }) {
       const { error } = await supabase
         .from('goal_milestones')
         .insert({
-          goal_id: params.id,
+          goal_id: id,
           title: newMilestone.title,
           description: newMilestone.description || null,
           target_date: newMilestone.target_date,
