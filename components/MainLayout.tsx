@@ -28,7 +28,7 @@ export default function MainLayout({
                 <Link href="/dashboard" className="text-sm font-medium hover:text-primary">
                   Dashboard
                 </Link>
-                <form action="/auth/sign-out" method="post">
+                <form action="/sign-out" method="post">
                   <Button variant="ghost" className="text-sm font-medium">
                     Sign Out
                   </Button>

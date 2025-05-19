@@ -2,16 +2,32 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 export const updateSession = async (request: NextRequest) => {
-  // This `try/catch` block is only here for the interactive tutorial.
-  // Feel free to remove once you have Supabase connected.
-  try {
-    // Create an unmodified response
-    let response = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+  // Get current path
+  const path = request.nextUrl.pathname;
+  
+  // Create an unmodified response
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
+  // Skip middleware entirely for static assets or special paths
+  if (
+    path.startsWith('/_next/') ||
+    path.startsWith('/.well-known/') ||
+    path.includes('favicon') ||
+    path.endsWith('.json') ||
+    path.endsWith('.ico') ||
+    path.endsWith('.svg') ||
+    path.endsWith('.png') ||
+    path.endsWith('.jpg') ||
+    path.endsWith('.jpeg')
+  ) {
+    return response;
+  }
+
+  try {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -35,24 +51,38 @@ export const updateSession = async (request: NextRequest) => {
       },
     );
 
-    // This will refresh session if expired - required for Server Components
-    // https://supabase.com/docs/guides/auth/server-side/nextjs
-    const user = await supabase.auth.getUser();
+    // Always allow access to authentication-related routes
+    if (
+      path === '/sign-in' || 
+      path === '/sign-up' || 
+      path === '/forgot-password' ||
+      path.startsWith('/auth/')
+    ) {
+      return response;
+    }
 
-    // protected routes
-    if (request.nextUrl.pathname.startsWith("/protected") && user.error) {
-      return NextResponse.redirect(new URL("/sign-in", request.url));
+    // Define protected routes that require authentication
+    const isProtectedRoute = 
+      path.startsWith('/goals') || 
+      path.startsWith('/habits') || 
+      path.startsWith('/dashboard') || 
+      path.startsWith('/settings');
+    
+    // Only check auth for protected routes
+    if (isProtectedRoute) {
+      // Refresh session
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      // Redirect to sign-in for protected routes if no user
+      if (!user || error) {
+        return NextResponse.redirect(new URL("/sign-in", request.url));
+      }
     }
 
     return response;
   } catch (e) {
-    // If you are here, a Supabase client could not be created!
-    // This is likely because you have not set up environment variables.
-    // Check out http://localhost:3000 for Next Steps.
-    return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+    console.error("Middleware error:", e);
+    // Return the response instead of creating a new one to avoid potential loops
+    return response;
   }
 };
