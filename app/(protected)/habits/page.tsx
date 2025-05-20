@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusIcon, CheckCircle2, Flame, Calendar, LineChart, Settings } from 'lucide-react';
+import { PlusIcon, CheckCircle2, Flame, Calendar, LineChart, Settings, Check, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { toast } from '@/components/ui/use-toast';
 
 // Types
 interface Habit {
@@ -28,77 +29,78 @@ interface Habit {
 interface HabitWithStats extends Habit {
   current_streak: number;
   streak_goal?: number;
-  todayStatus?: 'completed' | 'pending' | 'missed';
+  todayStatus?: 'completed' | 'pending' | 'missed' | 'skipped';
 }
 
 export default function HabitsPage() {
   const [habits, setHabits] = useState<HabitWithStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
+
+  const fetchHabits = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get current user to ensure we're authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.error('User not authenticated');
+        setHabits([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Fetch habits - with RLS, this will only return the user's habits
+      const { data: habitsData, error: habitsError } = await supabase
+        .from('habits')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (habitsError) throw habitsError;
+
+      if (!habitsData) {
+        setHabits([]);
+        return;
+      }
+
+      // Fetch today's logs to determine habit status
+      const today = new Date().toISOString().split('T')[0];
+      const { data: logsData, error: logsError } = await supabase
+        .from('habit_logs')
+        .select('habit_id, status')
+        .eq('completion_date', today);
+
+      if (logsError) throw logsError;
+
+      // Process habits with stats
+      const habitsWithStats: HabitWithStats[] = habitsData.map((habit: Habit) => {
+        const todayLog = logsData?.find((log: any) => log.habit_id === habit.id);
+        return {
+          ...habit,
+          current_streak: 0, // Will be updated from streak calculation
+          todayStatus: todayLog ? todayLog.status as 'completed' | 'pending' | 'missed' | 'skipped' : 'pending'
+        };
+      });
+
+      // For each habit, fetch streak info
+      for (const habit of habitsWithStats) {
+        const { data: streakData } = await supabase
+          .rpc('get_habit_streak', { habit_uuid: habit.id });
+        
+        habit.current_streak = streakData || 0;
+      }
+
+      setHabits(habitsWithStats);
+    } catch (error) {
+      console.error('Error fetching habits:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchHabits = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Get current user to ensure we're authenticated
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          console.error('User not authenticated');
-          setHabits([]);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Fetch habits - with RLS, this will only return the user's habits
-        const { data: habitsData, error: habitsError } = await supabase
-          .from('habits')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (habitsError) throw habitsError;
-
-        if (!habitsData) {
-          setHabits([]);
-          return;
-        }
-
-        // Fetch today's logs to determine habit status
-        const today = new Date().toISOString().split('T')[0];
-        const { data: logsData, error: logsError } = await supabase
-          .from('habit_logs')
-          .select('habit_id, status')
-          .eq('completion_date', today);
-
-        if (logsError) throw logsError;
-
-        // Process habits with stats
-        const habitsWithStats: HabitWithStats[] = habitsData.map((habit: Habit) => {
-          const todayLog = logsData?.find((log: any) => log.habit_id === habit.id);
-          return {
-            ...habit,
-            current_streak: 0, // Will be updated from streak calculation
-            todayStatus: todayLog ? todayLog.status as 'completed' | 'pending' | 'missed' : 'pending'
-          };
-        });
-
-        // For each habit, fetch streak info
-        for (const habit of habitsWithStats) {
-          const { data: streakData } = await supabase
-            .rpc('get_habit_streak', { habit_uuid: habit.id });
-          
-          habit.current_streak = streakData || 0;
-        }
-
-        setHabits(habitsWithStats);
-      } catch (error) {
-        console.error('Error fetching habits:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchHabits();
   }, []);
 
@@ -108,6 +110,91 @@ export default function HabitsPage() {
     if (activeTab === 'inactive') return !habit.is_active;
     return true;
   });
+
+  const updateHabitStatus = async (habitId: string, status: 'completed' | 'missed' | 'skipped') => {
+    try {
+      setIsUpdating(habitId);
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get current habit from state
+      const currentHabit = habits.find(h => h.id === habitId);
+      
+      // Check if we're toggling off the current status (same status clicked twice)
+      const isToggleOff = currentHabit?.todayStatus === status;
+      
+      // Check if a log already exists for today
+      const { data: existingLog, error: checkError } = await supabase
+        .from('habit_logs')
+        .select('id')
+        .eq('habit_id', habitId)
+        .eq('completion_date', today)
+        .single();
+      
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
+        throw checkError;
+      }
+
+      let result;
+      
+      if (existingLog && isToggleOff) {
+        // Delete the log if toggling off
+        result = await supabase
+          .from('habit_logs')
+          .delete()
+          .eq('id', existingLog.id);
+      } else if (existingLog) {
+        // Update existing log
+        result = await supabase
+          .from('habit_logs')
+          .update({ status, updated_at: new Date().toISOString() })
+          .eq('id', existingLog.id);
+      } else {
+        // Insert new log
+        result = await supabase
+          .from('habit_logs')
+          .insert({
+            habit_id: habitId,
+            completion_date: today,
+            status
+          });
+      }
+
+      if (result.error) throw result.error;
+      
+      // Update local state
+      setHabits(prevHabits => 
+        prevHabits.map(habit => 
+          habit.id === habitId 
+            ? { 
+                ...habit, 
+                todayStatus: isToggleOff ? 'pending' : status 
+              } 
+            : habit
+        )
+      );
+      
+      // Refresh habits to get updated streak info
+      fetchHabits();
+      
+      toast({
+        title: isToggleOff ? "Status cleared" : "Habit updated",
+        description: isToggleOff 
+          ? `Habit marked as pending` 
+          : `Habit marked as ${status}`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error updating habit status:', error);
+      toast({
+        title: "Update failed",
+        description: "Failed to update habit status",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setIsUpdating(null);
+    }
+  };
 
   return (
     <div className="container py-6 space-y-6">
@@ -170,7 +257,7 @@ export default function HabitsPage() {
           ) : (
             <div className="grid gap-4">
               {filteredHabits.map((habit) => (
-                <HabitCard key={habit.id} habit={habit} />
+                <HabitCard key={habit.id} habit={habit} onUpdateStatus={updateHabitStatus} />
               ))}
             </div>
           )}
@@ -198,7 +285,12 @@ function StatsCard({ title, value, icon }: { title: string; value: string; icon:
   );
 }
 
-function HabitCard({ habit }: { habit: HabitWithStats }) {
+function HabitCard({ habit, onUpdateStatus }: { 
+  habit: HabitWithStats; 
+  onUpdateStatus: (habitId: string, status: 'completed' | 'missed' | 'skipped') => Promise<void>;
+}) {
+  const [isUpdating, setIsUpdating] = useState(false);
+  
   const frequencyText = () => {
     if (habit.frequency === 'daily') return 'Daily';
     if (habit.frequency === 'weekly') return 'Weekly';
@@ -215,6 +307,7 @@ function HabitCard({ habit }: { habit: HabitWithStats }) {
   const todayStatusColor = () => {
     if (habit.todayStatus === 'completed') return 'bg-green-500';
     if (habit.todayStatus === 'missed') return 'bg-red-500';
+    if (habit.todayStatus === 'skipped') return 'bg-blue-500';
     return 'bg-yellow-500';
   };
 
@@ -246,7 +339,9 @@ function HabitCard({ habit }: { habit: HabitWithStats }) {
                 ? 'Completed' 
                 : habit.todayStatus === 'missed' 
                   ? 'Missed' 
-                  : 'Pending'}
+                  : habit.todayStatus === 'skipped'
+                    ? 'Skipped'
+                    : 'Pending'}
             </span>
           </div>
           <div className="flex items-center gap-1">
@@ -259,6 +354,51 @@ function HabitCard({ habit }: { habit: HabitWithStats }) {
             </Button>
           </Link>
         </div>
+      </div>
+      
+      <div className="flex flex-col sm:flex-row gap-2 p-4 pt-0">
+        <Button 
+          variant={habit.todayStatus === 'completed' ? 'secondary' : 'outline'} 
+          size="sm" 
+          className="flex-1"
+          disabled={isUpdating}
+          onClick={async () => {
+            setIsUpdating(true);
+            await onUpdateStatus(habit.id, 'completed');
+            setIsUpdating(false);
+          }}
+        >
+          <Check className="h-4 w-4 mr-2" />
+          Completed
+        </Button>
+        <Button 
+          variant={habit.todayStatus === 'missed' ? 'secondary' : 'outline'} 
+          size="sm" 
+          className="flex-1"
+          disabled={isUpdating}
+          onClick={async () => {
+            setIsUpdating(true);
+            await onUpdateStatus(habit.id, 'missed');
+            setIsUpdating(false);
+          }}
+        >
+          <X className="h-4 w-4 mr-2" />
+          Missed
+        </Button>
+        <Button 
+          variant={habit.todayStatus === 'skipped' ? 'secondary' : 'outline'} 
+          size="sm" 
+          className="flex-1"
+          disabled={isUpdating}
+          onClick={async () => {
+            setIsUpdating(true);
+            await onUpdateStatus(habit.id, 'skipped');
+            setIsUpdating(false);
+          }}
+        >
+          <Calendar className="h-4 w-4 mr-2" />
+          Skip
+        </Button>
       </div>
     </Card>
   );

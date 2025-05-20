@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useIsMobile } from "@/hooks/use-mobile"
 import MicrosoftLogo from "./icons/microsoft-logo"
+import GoogleLogo from "./icons/google-logo"
 import { getURL } from "@/utils/helpers"
 
 export function LoginForm({
@@ -18,7 +19,7 @@ export function LoginForm({
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [oauthLoading, setOAuthLoading] = useState(false)
+  const [oauthLoading, setOAuthLoading] = useState<string | null>(null)
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -34,19 +35,24 @@ export function LoginForm({
     }
   }
 
-  async function handleMicrosoftSignIn() {
+  async function handleOAuthSignIn(provider: 'azure' | 'google') {
     setError("")
-    setOAuthLoading(true)
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'azure',
-      options: {
-        scopes: 'email',
-        redirectTo: getURL(),
+    setOAuthLoading(provider)
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          scopes: 'email',
+          redirectTo: getURL(),
+        }
+      })
+      if (error) {
+        setError(error.message)
       }
-    })
-    setOAuthLoading(false)
-    if (error) {
-      setError(error.message)
+    } catch (e) {
+      setError("An error occurred during authentication")
+    } finally {
+      setOAuthLoading(null)
     }
   }
 
@@ -104,16 +110,29 @@ export function LoginForm({
           </div>
         </div>
         
-        <Button 
-          variant="outline" 
-          type="button" 
-          className="w-full" 
-          onClick={handleMicrosoftSignIn}
-          disabled={oauthLoading}
-        >
-          <MicrosoftLogo className="mr-2" />
-          {oauthLoading ? "Connecting..." : "Login with Microsoft"}
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button 
+            variant="outline" 
+            type="button" 
+            className="w-full" 
+            onClick={() => handleOAuthSignIn('google')}
+            disabled={oauthLoading !== null}
+          >
+            <GoogleLogo className="mr-2" />
+            {oauthLoading === 'google' ? "Connecting..." : "Login with Google"}
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            type="button" 
+            className="w-full" 
+            onClick={() => handleOAuthSignIn('azure')}
+            disabled={oauthLoading !== null}
+          >
+            <MicrosoftLogo className="mr-2" />
+            {oauthLoading === 'azure' ? "Connecting..." : "Login with Microsoft"}
+          </Button>
+        </div>
         
         <div className="text-center text-sm">
           Don&apos;t have an account?{" "}

@@ -168,6 +168,11 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
   }, [id]);
 
   const checkInHabit = async (status: 'completed' | 'missed' | 'skipped') => {
+    // Prevent multiple concurrent calls
+    if (isCheckingIn) {
+      return;
+    }
+    
     try {
       setIsCheckingIn(true);
       const today = new Date().toISOString().split('T')[0];
@@ -175,17 +180,57 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
       // Check if already logged for today
       const existingLog = logs.find(log => log.completion_date.split('T')[0] === today);
       
-      if (existingLog) {
+      // Check if toggling the same status
+      const isToggleOff = existingLog?.status === status;
+      
+      let result;
+      
+      if (existingLog && isToggleOff) {
+        // Delete the log if toggling off
+        result = await supabase
+          .from('habit_logs')
+          .delete()
+          .eq('id', existingLog.id);
+          
+        if (result.error) throw result.error;
+        
+        // Remove from UI after successful DB operation
+        setLogs(logs.filter(log => log.id !== existingLog.id));
+        
+        // Remove from marked dates
+        const newMarkedDates = { ...markedDates };
+        delete newMarkedDates[today];
+        setMarkedDates(newMarkedDates);
+        
+        toast({
+          title: "Status cleared",
+          description: `Habit status has been reset`
+        });
+      } else if (existingLog) {
         // Update existing log
-        const { error } = await supabase
+        result = await supabase
           .from('habit_logs')
           .update({ status })
           .eq('id', existingLog.id);
           
-        if (error) throw error;
+        if (result.error) throw result.error;
+        
+        // Update UI after successful DB operation
+        setLogs(logs.map(log => log.id === existingLog.id ? { ...log, status } : log));
+        
+        // Update marked dates
+        setMarkedDates({
+          ...markedDates,
+          [today]: status
+        });
+        
+        toast({
+          title: "Success",
+          description: `Habit marked as ${status} for today`
+        });
       } else {
         // Insert new log
-        const { error } = await supabase
+        result = await supabase
           .from('habit_logs')
           .insert({
             habit_id: id,
@@ -193,46 +238,47 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
             status
           });
           
-        if (error) throw error;
+        if (result.error) throw result.error;
+        
+        // Fetch the newly created log to get its proper UUID
+        const { data: newLogData, error: fetchError } = await supabase
+          .from('habit_logs')
+          .select('*')
+          .eq('habit_id', id)
+          .eq('completion_date', today)
+          .single();
+          
+        if (fetchError) throw fetchError;
+        
+        // Update UI with the actual database record
+        if (newLogData) {
+          setLogs([newLogData, ...logs]);
+          
+          // Update marked dates
+          setMarkedDates({
+            ...markedDates,
+            [today]: status
+          });
+          
+          toast({
+            title: "Success",
+            description: `Habit marked as ${status} for today`
+          });
+        }
       }
-      
-      // Refresh data
-      router.refresh();
-      
-      toast({
-        title: "Success",
-        description: `Habit marked as ${status} for today`,
-      });
-      
-      // Update UI without full reload
-      const newLogs = existingLog 
-        ? logs.map(log => log.id === existingLog.id ? { ...log, status } : log)
-        : [{ 
-            id: Math.random().toString(), // temporary ID
-            habit_id: id,
-            completion_date: today,
-            status,
-            notes: null,
-            created_at: new Date().toISOString()
-          }, ...logs];
-      
-      setLogs(newLogs);
-      
-      // Update marked dates
-      setMarkedDates({
-        ...markedDates,
-        [today]: status
-      });
       
     } catch (error: any) {
       console.error('Error checking in habit:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to check in",
+        description: error.message || "Failed to update habit status",
         variant: "destructive"
       });
     } finally {
-      setIsCheckingIn(false);
+      // Add a small delay before releasing the lock to prevent rapid clicks
+      setTimeout(() => {
+        setIsCheckingIn(false);
+      }, 500);
     }
   };
 
@@ -332,17 +378,16 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
           <div className="flex flex-col sm:flex-row gap-2 mt-4">
             <Button 
               className="flex-1" 
-              variant={todayLog?.status === 'completed' ? "default" : "outline"}
+              variant={todayLog?.status === 'completed' ? "secondary" : "outline"}
               onClick={() => checkInHabit('completed')}
               disabled={isCheckingIn}
-              style={todayLog?.status === 'completed' ? { backgroundColor: "hsl(var(--success))", borderColor: "hsl(var(--success))" } : {}}
             >
               <Check className="h-4 w-4 mr-2" />
               Completed
             </Button>
             <Button 
               className="flex-1" 
-              variant={todayLog?.status === 'missed' ? "destructive" : "outline"}
+              variant={todayLog?.status === 'missed' ? "secondary" : "outline"}
               onClick={() => checkInHabit('missed')}
               disabled={isCheckingIn}
             >
@@ -351,10 +396,9 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
             </Button>
             <Button 
               className="flex-1" 
-              variant={todayLog?.status === 'skipped' ? "default" : "outline"}
+              variant={todayLog?.status === 'skipped' ? "secondary" : "outline"}
               onClick={() => checkInHabit('skipped')}
               disabled={isCheckingIn}
-              style={todayLog?.status === 'skipped' ? { backgroundColor: "hsl(var(--warning))", borderColor: "hsl(var(--warning))", color: "hsl(var(--warning-foreground))" } : {}}
             >
               <CalendarIcon className="h-4 w-4 mr-2" />
               Skip

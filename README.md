@@ -102,3 +102,39 @@ Please file feedback and issues over on the [Supabase GitHub org](https://github
 - [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
 - [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
 - [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+
+## Configuring Google Authentication
+
+To use Google Sign-In with your Lifeaware application, follow these steps:
+
+### 1. Set up Google OAuth Credentials
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Navigate to "APIs & Services" > "Credentials"
+4. Click "Create Credentials" and select "OAuth client ID"
+5. Set application type as "Web application"
+6. Give your OAuth client a name (e.g., "Lifeaware Authentication")
+7. Under "Authorized JavaScript origins", add your site URL (e.g., http://localhost:3000 for local development)
+8. Under "Authorized redirect URIs", add your Supabase callback URL from the Supabase dashboard. This typically looks like:
+   - `https://[YOUR_PROJECT_ID].supabase.co/auth/v1/callback`
+
+### 2. Configure Supabase
+
+1. Go to your [Supabase Dashboard](https://app.supabase.io/)
+2. Navigate to your project
+3. Go to "Authentication" > "Providers"
+4. Find Google in the list and enable it
+5. Enter the "Client ID" and "Client Secret" from your Google Cloud Console credentials
+6. Save changes
+
+### 3. Additional Configuration (Optional)
+
+For production environments, you may want to:
+
+1. Configure the OAuth consent screen in Google Cloud Console
+2. Set your site's domain as an authorized domain
+3. Add privacy policy and terms of service URLs
+4. Consider submitting your app for verification if you plan to access sensitive user data
+
+For more information, refer to the [Supabase Google Auth documentation](https://supabase.com/docs/guides/auth/social-login/auth-google).

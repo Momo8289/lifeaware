@@ -63,43 +63,119 @@ ALTER TABLE public.habit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.habit_reminders ENABLE ROW LEVEL SECURITY;
 
 -- Create policies to ensure users can only access their own data
-CREATE POLICY "Users can view their own habits" ON public.habits
-  FOR SELECT USING (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy 
+    WHERE polname = 'Users can view their own habits' 
+    AND polrelid = 'public.habits'::regclass
+  ) THEN
+    CREATE POLICY "Users can view their own habits" ON public.habits
+      FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy 
+    WHERE polname = 'Users can insert their own habits' 
+    AND polrelid = 'public.habits'::regclass
+  ) THEN
+    CREATE POLICY "Users can insert their own habits" ON public.habits
+      FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy 
+    WHERE polname = 'Users can update their own habits' 
+    AND polrelid = 'public.habits'::regclass
+  ) THEN
+    CREATE POLICY "Users can update their own habits" ON public.habits
+      FOR UPDATE USING (auth.uid() = user_id);
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy 
+    WHERE polname = 'Users can delete their own habits' 
+    AND polrelid = 'public.habits'::regclass
+  ) THEN
+    CREATE POLICY "Users can delete their own habits" ON public.habits
+      FOR DELETE USING (auth.uid() = user_id);
+  END IF;
 
-CREATE POLICY "Users can insert their own habits" ON public.habits
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+  -- Policies for habit logs
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy 
+    WHERE polname = 'Users can view their own habit logs' 
+    AND polrelid = 'public.habit_logs'::regclass
+  ) THEN
+    CREATE POLICY "Users can view their own habit logs" ON public.habit_logs
+      FOR SELECT USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy 
+    WHERE polname = 'Users can insert their own habit logs' 
+    AND polrelid = 'public.habit_logs'::regclass
+  ) THEN
+    CREATE POLICY "Users can insert their own habit logs" ON public.habit_logs
+      FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy 
+    WHERE polname = 'Users can update their own habit logs' 
+    AND polrelid = 'public.habit_logs'::regclass
+  ) THEN
+    CREATE POLICY "Users can update their own habit logs" ON public.habit_logs
+      FOR UPDATE USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy 
+    WHERE polname = 'Users can delete their own habit logs' 
+    AND polrelid = 'public.habit_logs'::regclass
+  ) THEN
+    CREATE POLICY "Users can delete their own habit logs" ON public.habit_logs
+      FOR DELETE USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
+  END IF;
 
-CREATE POLICY "Users can update their own habits" ON public.habits
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own habits" ON public.habits
-  FOR DELETE USING (auth.uid() = user_id);
-
--- Policies for habit logs
-CREATE POLICY "Users can view their own habit logs" ON public.habit_logs
-  FOR SELECT USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
-
-CREATE POLICY "Users can insert their own habit logs" ON public.habit_logs
-  FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
-
-CREATE POLICY "Users can update their own habit logs" ON public.habit_logs
-  FOR UPDATE USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
-
-CREATE POLICY "Users can delete their own habit logs" ON public.habit_logs
-  FOR DELETE USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
-
--- Policies for habit reminders
-CREATE POLICY "Users can view their own habit reminders" ON public.habit_reminders
-  FOR SELECT USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
-
-CREATE POLICY "Users can insert their own habit reminders" ON public.habit_reminders
-  FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
-
-CREATE POLICY "Users can update their own habit reminders" ON public.habit_reminders
-  FOR UPDATE USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
-
-CREATE POLICY "Users can delete their own habit reminders" ON public.habit_reminders
-  FOR DELETE USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
+  -- Policies for habit reminders
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy 
+    WHERE polname = 'Users can view their own habit reminders' 
+    AND polrelid = 'public.habit_reminders'::regclass
+  ) THEN
+    CREATE POLICY "Users can view their own habit reminders" ON public.habit_reminders
+      FOR SELECT USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy 
+    WHERE polname = 'Users can insert their own habit reminders' 
+    AND polrelid = 'public.habit_reminders'::regclass
+  ) THEN
+    CREATE POLICY "Users can insert their own habit reminders" ON public.habit_reminders
+      FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy 
+    WHERE polname = 'Users can update their own habit reminders' 
+    AND polrelid = 'public.habit_reminders'::regclass
+  ) THEN
+    CREATE POLICY "Users can update their own habit reminders" ON public.habit_reminders
+      FOR UPDATE USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy 
+    WHERE polname = 'Users can delete their own habit reminders' 
+    AND polrelid = 'public.habit_reminders'::regclass
+  ) THEN
+    CREATE POLICY "Users can delete their own habit reminders" ON public.habit_reminders
+      FOR DELETE USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
+  END IF;
+END
+$$;
 
 -- Create functions for habit streak calculation
 CREATE OR REPLACE FUNCTION get_habit_streak(habit_uuid UUID)
