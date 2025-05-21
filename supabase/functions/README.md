@@ -1,48 +1,66 @@
-# Supabase Edge Functions
+## Supabase Edge Functions
 
-This directory contains Supabase Edge Functions for the LifeAware application.
+This folder contains the Edge Function for account management in the LifeAware application.
 
-## Available Functions
+### User Self-Deletion Function
 
-- `user-self-deletion`: Handles complete user account deletion including auth data
+The `user-self-deletion` function allows users to permanently delete their accounts and all associated data, including:
+- Auth user record
+- Profile data
+- Avatar files in storage
 
-## Deployment Instructions
+### Local Development
 
-Before deploying, make sure you have:
+To develop and test Edge Functions locally, you need Docker Desktop installed:
+- [Docker Desktop Installation](https://docs.docker.com/desktop)
 
-1. Installed the Supabase CLI: `npm install -g supabase`
-2. Logged in to your Supabase account: `supabase login`
-3. Linked your project: `supabase link --project-ref YOUR_PROJECT_REF`
-
-To deploy a function:
-
-```bash
-# Make sure you're in the project root directory
-cd /path/to/lifeaware
-
-# Deploy the user-self-deletion function
-supabase functions deploy user-self-deletion
-
-# Verify deployment
-supabase functions list
-```
-
-## Local Development
-
-To run and test functions locally:
+After installing Docker, run the Supabase local development environment:
 
 ```bash
-# Start functions emulator
-supabase functions serve
-
-# In another terminal, invoke the function locally
-curl -i --location --request POST 'http://localhost:54321/functions/v1/user-self-deletion' \
-  --header 'Authorization: Bearer YOUR_JWT_TOKEN' \
-  --header 'Content-Type: application/json'
+npx supabase start
 ```
 
-## Important Notes
+### Deployment
 
-- The `user-self-deletion` function requires `service_role` privileges to delete users from the auth.users table
-- Make sure your RLS policies allow the authenticated user to delete their profile data
-- Ensure the "Storage cascade delete" setting is enabled if you store user files 
+To deploy the Edge Function to your Supabase project:
+
+```bash
+# Deploy the function
+npx supabase functions deploy user-self-deletion
+
+# Or deploy all functions at once
+npx supabase functions deploy
+```
+
+### Implementation Details
+
+The `user-self-deletion` function:
+- Requires authentication (Bearer token)
+- Deletes user's avatar from storage if it exists
+- Deletes user's profile data
+- Deletes the user from auth.users using admin.deleteUser
+- Returns a success/error response
+
+### Usage in Frontend
+
+Example of calling the Edge Function from the frontend:
+
+```typescript
+const { data: sessionData } = await supabase.auth.getSession()
+const session = sessionData?.session
+
+if (!session) {
+  throw new Error('You must be logged in')
+}
+
+const { data, error } = await supabase.functions.invoke(
+  'user-self-deletion',
+  {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json'
+    }
+  }
+)
+``` 

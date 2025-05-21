@@ -57,7 +57,7 @@ export function LoginForm({
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          scopes: 'email',
+          scopes: provider === 'azure' ? 'email user.read profile openid' : 'email',
           redirectTo: getURL(),
         }
       })

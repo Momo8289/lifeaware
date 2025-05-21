@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { supabase } from "@/lib/supabase/client"
+import { supabase, handleAccountDeletion } from "@/lib/supabase/client"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -238,10 +238,6 @@ export default function AccountPage() {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json'
-          },
-          body: {
-            userId: user.id,
-            action: 'delete'
           }
         }
       )
@@ -253,9 +249,10 @@ export default function AccountPage() {
         description: "Your account has been permanently deleted.",
       })
       
-      // Sign out and redirect to sign-in page
-      await supabase.auth.signOut()
-      router.push("/sign-in")
+      // Redirect after account deletion
+      setTimeout(() => {
+        handleAccountDeletion();
+      }, 1000)
     } catch (error: any) {
       console.error('Error deleting account:', error)
       toast({
@@ -512,12 +509,13 @@ export default function AccountPage() {
           Delete Account
         </Button>
         
+        {/* Delete Account Dialog */}
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <DialogContent className="z-[100]">
             <DialogHeader>
               <DialogTitle className="text-xl">Delete Account</DialogTitle>
               <DialogDescription className="mt-2 text-base">
-                Are you sure you want to delete your account?
+                Are you sure you want to permanently delete your account? This action cannot be undone and will erase all your data.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="mt-4">

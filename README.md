@@ -155,3 +155,25 @@ For production environments, you may want to:
 4. Consider submitting your app for verification if you plan to access sensitive user data
 
 For more information, refer to the [Supabase Google Auth documentation](https://supabase.com/docs/guides/auth/social-login/auth-google).
+
+## Deploying Edge Functions for Account Management
+
+This project includes a Supabase Edge Function for account management:
+
+### User Self-Deletion Function
+
+Allows users to permanently delete their accounts and all associated data (profiles, avatars, etc.).
+
+### Deployment Instructions
+
+Deploy this function to your Supabase project using the CLI:
+
+```bash
+# Deploy the function
+npx supabase functions deploy user-self-deletion
+
+# Or deploy all functions at once
+npx supabase functions deploy
+```
+
+For more details about this function, refer to the documentation in the `supabase/functions` directory.

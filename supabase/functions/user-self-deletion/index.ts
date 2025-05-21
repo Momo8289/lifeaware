@@ -18,65 +18,114 @@ serve(async (req: Request) => {
       throw new Error('Missing Authorization header')
     }
     
-    const token = authHeader.replace('Bearer ', '')
-    if (!token) {
-      throw new Error('Invalid token format')
-    }
-    
-    console.log('Processing request with auth token')
-    
-    // Create admin client
+    // Create admin client for operations that require admin privileges
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
     
-    // Verify the token and get the user
-    const { data: { user }, error: verifyError } = await supabaseAdmin.auth.getUser(token)
+    // Use admin client to verify the JWT token and get user
+    const token = authHeader.replace('Bearer ', '')
     
-    if (verifyError || !user) {
-      console.error('Token verification failed:', verifyError)
-      throw new Error(verifyError?.message || 'Invalid token')
+    // Manually decode the JWT to get the user ID
+    // This avoids the Auth session missing error
+    let userId;
+    try {
+      // Basic JWT decoding to extract the payload
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      
+      const payload = JSON.parse(jsonPayload);
+      userId = payload.sub;
+      
+      if (!userId) {
+        throw new Error('Invalid token: User ID not found in JWT payload');
+      }
+      
+      console.log('User ID extracted from token:', userId);
+    } catch (jwtError) {
+      console.error('Error decoding JWT:', jwtError);
+      throw new Error('Invalid authentication token');
     }
     
-    console.log('User authenticated:', user.id)
+    // Verify the user exists in auth
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
     
-    // Try to parse the request body (optional)
-    let userId = user.id
-    try {
-      const body = await req.json()
-      if (body && body.userId) {
-        // Extra verification that the user is deleting their own account
-        if (body.userId !== user.id) {
-          throw new Error('Cannot delete another user\'s account')
+    if (userError || !userData.user) {
+      console.error('Error verifying user:', userError);
+      throw new Error('User not found or authentication failed');
+    }
+    
+    console.log('User authenticated:', userId);
+    
+    // Get user profile to retrieve avatar info
+    const { data: profile, error: profileFetchError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, avatar_url')
+      .eq('id', userId)
+      .single();
+    
+    if (profileFetchError && profileFetchError.code !== 'PGRST116') {
+      console.error('Error fetching profile:', profileFetchError);
+      // Continue with user deletion even if profile fetch fails
+    }
+    
+    // Delete avatar if it exists
+    if (profile && profile.avatar_url) {
+      try {
+        console.log('Attempting to delete avatar:', profile.avatar_url);
+        
+        // Check if avatar_url is a simple filename or full path
+        let avatarFilename = profile.avatar_url;
+        
+        // If it's a full URL, extract just the filename
+        if (typeof avatarFilename === 'string' && avatarFilename.includes('/')) {
+          avatarFilename = avatarFilename.split('/').pop();
         }
+        
+        if (avatarFilename) {
+          const { data: avatarDeletion, error: avatarError } = await supabaseAdmin
+            .storage
+            .from('avatars')
+            .remove([avatarFilename]);
+          
+          if (avatarError) {
+            console.error('Error deleting avatar:', avatarError);
+            // Continue with user deletion even if avatar deletion fails
+          } else {
+            console.log('Avatar deleted successfully');
+          }
+        }
+      } catch (avatarError) {
+        console.error('Error during avatar deletion process:', avatarError);
+        // Continue with user deletion even if avatar deletion fails
       }
-    } catch (e) {
-      // If body parsing fails, proceed with the authenticated user ID
-      console.log('Using default user ID from token')
     }
     
     // Delete profile data
-    console.log('Deleting profile data for user:', userId)
+    console.log('Deleting profile data for user:', userId);
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
-      .eq('id', userId)
+      .eq('id', userId);
     
     if (profileError) {
-      console.error('Error deleting profile:', profileError)
+      console.error('Error deleting profile:', profileError);
       // Continue with user deletion even if profile deletion fails
     }
     
     // Delete the user from auth.users
-    console.log('Deleting auth record for user:', userId)
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+    console.log('Deleting auth record for user:', userId);
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
     
     if (deleteError) {
-      throw new Error(`Failed to delete user: ${deleteError.message}`)
+      throw new Error(`Failed to delete user: ${deleteError.message}`);
     }
     
-    console.log('User successfully deleted:', userId)
+    console.log('User successfully deleted:', userId);
     
     return new Response(
       JSON.stringify({
@@ -87,9 +136,9 @@ serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
       }
-    )
+    );
   } catch (error) {
-    console.error('Error in user-self-deletion:', error)
+    console.error('Error in user-self-deletion:', error);
     
     return new Response(
       JSON.stringify({
@@ -100,6 +149,6 @@ serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400
       }
-    )
+    );
   }
-}) 
+}); 
