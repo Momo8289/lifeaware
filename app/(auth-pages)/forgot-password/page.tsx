@@ -1,37 +1,33 @@
-import { forgotPasswordAction } from "@/app/actions";
-import { FormMessage, Message } from "@/components/form-message";
-import { SubmitButton } from "@/components/submit-button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { SmtpMessage } from "../smtp-message";
+'use client';
 
-export default async function ForgotPassword(props: {
-  searchParams: Promise<Message>;
-}) {
-  const searchParams = await props.searchParams;
+import { Suspense } from 'react';
+import { HeartPulse } from 'lucide-react';
+import Link from "next/link";
+import AuthLayout from "../auth-layout";
+import ForgotPasswordForm from "./forgot-password-form";
+
+export default function ForgotPassword() {
   return (
-    <>
-      <form className="flex-1 flex flex-col w-full gap-2 text-foreground [&>input]:mb-6 min-w-64 max-w-64 mx-auto">
-        <div>
-          <h1 className="text-2xl font-medium">Reset Password</h1>
-          <p className="text-sm text-secondary-foreground">
-            Already have an account?{" "}
-            <Link className="text-primary underline" href="/sign-in">
-              Sign in
-            </Link>
+    <AuthLayout>
+      <Link href="/" className="flex items-center gap-2 font-medium hover:text-primary transition-colors mb-4">
+        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          <HeartPulse className="size-4" />
+        </div>
+        Lifeaware
+      </Link>
+      
+      <div className="w-full">
+        <div className="space-y-2 text-center mb-6">
+          <h1 className="text-3xl font-bold">Reset Password</h1>
+          <p className="text-muted-foreground">
+            Enter your email to receive a password reset link
           </p>
         </div>
-        <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8">
-          <Label htmlFor="email">Email</Label>
-          <Input name="email" placeholder="you@example.com" required />
-          <SubmitButton formAction={forgotPasswordAction}>
-            Reset Password
-          </SubmitButton>
-          <FormMessage message={searchParams} />
-        </div>
-      </form>
-      <SmtpMessage />
-    </>
+        
+        <Suspense fallback={<div>Loading...</div>}>
+          <ForgotPasswordForm />
+        </Suspense>
+      </div>
+    </AuthLayout>
   );
 }

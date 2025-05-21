@@ -59,14 +59,16 @@ export const signInAction = async (formData: FormData) => {
 export const forgotPasswordAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const supabase = await createClient();
-  const callbackUrl = formData.get("callbackUrl")?.toString();
 
   if (!email) {
     return encodedRedirect("error", "/forgot-password", "Email is required");
   }
 
+  // Use Supabase's built-in password reset flow
+  // The user will get an email with a link to reset their password
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${getURL()}auth/callback?redirect_to=/protected/reset-password`,
+    // This will direct users back to your app after they set their password in Supabase's UI
+    redirectTo: `${getURL()}auth/callback`,
   });
 
   if (error) {
@@ -78,14 +80,11 @@ export const forgotPasswordAction = async (formData: FormData) => {
     );
   }
 
-  if (callbackUrl) {
-    return redirect(callbackUrl);
-  }
-
+  // Provide feedback that the email has been sent
   return encodedRedirect(
     "success",
     "/forgot-password",
-    "Check your email for a link to reset your password.",
+    "Check your email for a password reset link.",
   );
 };
 

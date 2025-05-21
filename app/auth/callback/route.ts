@@ -10,10 +10,16 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code");
   const redirectTo = requestUrl.searchParams.get("redirect_to")?.toString();
   const baseUrl = getURL().replace(/\/$/, ''); // Remove trailing slash if present
+  const type = requestUrl.searchParams.get("type")?.toString();
 
   if (code) {
     const supabase = await createClient();
     await supabase.auth.exchangeCodeForSession(code);
+    
+    // If this is a password reset, redirect to the sign in page
+    if (type === 'recovery') {
+      return NextResponse.redirect(`${baseUrl}/sign-in?message=password_updated`);
+    }
   }
 
   if (redirectTo) {

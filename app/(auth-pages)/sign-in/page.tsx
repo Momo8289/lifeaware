@@ -1,12 +1,23 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { HeartPulse } from 'lucide-react';
 import Link from 'next/link';
 import { LoginForm } from '@/components/login-form';
 import AuthLayout from '../auth-layout';
 
 export default function SignInPage() {
+  const [message, setMessage] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Get message from URL safely on the client side
+    const urlParams = new URLSearchParams(window.location.search);
+    const messageParam = urlParams.get('message');
+    if (messageParam) {
+      setMessage(messageParam);
+    }
+  }, []);
+  
   return (
     <AuthLayout>
       <Link href="/" className="flex items-center gap-2 font-medium hover:text-primary transition-colors mb-4">
@@ -15,7 +26,7 @@ export default function SignInPage() {
         </div>
         Lifeaware
       </Link>
-      <LoginForm />
+      <LoginForm message={message} />
     </AuthLayout>
   );
 } 

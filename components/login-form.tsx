@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
@@ -10,17 +10,32 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import MicrosoftLogo from "./icons/microsoft-logo"
 import GoogleLogo from "./icons/google-logo"
 import { getURL } from "@/utils/helpers"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { CheckCircle2 } from "lucide-react"
+
+interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
+  message?: string | null;
+}
 
 export function LoginForm({
   className,
+  message,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+}: LoginFormProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOAuthLoading] = useState<string | null>(null)
   const router = useRouter()
+  
+  useEffect(() => {
+    // Handle password reset success message
+    if (message === 'password_updated') {
+      setSuccessMessage('Your password has been successfully updated. You can now sign in with your new password.')
+    }
+  }, [message])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -65,6 +80,16 @@ export function LoginForm({
             Sign in to your Lifeaware account
           </p>
         </div>
+        
+        {successMessage && (
+          <Alert className="border-green-500 text-green-700 bg-green-50">
+            <CheckCircle2 className="h-4 w-4 mr-2" />
+            <AlertDescription>
+              {successMessage}
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -81,7 +106,7 @@ export function LoginForm({
             <div className="flex items-center">
               <Label htmlFor="password">Password</Label>
               <Link
-                href="/reset-password"
+                href="/forgot-password"
                 className="ml-auto text-sm underline-offset-4 hover:underline"
               >
                 Forgot your password?
