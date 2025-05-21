@@ -93,15 +93,32 @@ If you wish to just develop locally and not deploy to Vercel, [follow the steps 
 
 > Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
 
-## Feedback and issues
-
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
-
 ## More Supabase examples
 
 - [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
 - [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
 - [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+
+## Creating a New Supabase Project with CLI
+
+You can also create and manage your Supabase project using the Supabase CLI:
+
+1. Create a new project:
+   ```bash
+   supabase projects create [project] --region [region] --db-password [password]
+   ```
+
+2. Link your local project to the Supabase project:
+   ```bash
+   supabase link --project-ref [project-ref]
+   ```
+
+3. Push your database schema:
+   ```bash
+   supabase db push
+   ```
+
+For more information, refer to the [Supabase CLI documentation](https://supabase.com/docs/reference/cli).
 
 ## Configuring Google Authentication
 

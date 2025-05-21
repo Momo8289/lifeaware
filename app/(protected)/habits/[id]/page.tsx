@@ -48,7 +48,7 @@ interface HabitLog {
   id: string;
   habit_id: string;
   completion_date: string;
-  status: 'completed' | 'missed' | 'skipped';
+  status: 'completed';
   notes: string | null;
   created_at: string;
 }
@@ -76,7 +76,7 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
   const [stats, setStats] = useState<HabitStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
-  const [markedDates, setMarkedDates] = useState<Record<string, 'completed' | 'missed' | 'skipped'>>({});
+  const [markedDates, setMarkedDates] = useState<Record<string, 'completed'>>({});
 
   useEffect(() => {
     const fetchHabitData = async () => {
@@ -124,11 +124,11 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
         setLogs(logsData || []);
 
         // Create marked dates for calendar
-        const dates: Record<string, 'completed' | 'missed' | 'skipped'> = {};
+        const dates: Record<string, 'completed'> = {};
         logsData?.forEach((log: HabitLog) => {
           // Format dates consistently as YYYY-MM-DD
           const dateStr = log.completion_date.split('T')[0];
-          dates[dateStr] = log.status;
+          dates[dateStr] = 'completed';
         });
         setMarkedDates(dates);
         
@@ -167,7 +167,7 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
     fetchHabitData();
   }, [id]);
 
-  const checkInHabit = async (status: 'completed' | 'missed' | 'skipped') => {
+  const checkInHabit = async (status: 'completed') => {
     // Prevent multiple concurrent calls
     if (isCheckingIn) {
       return;
@@ -385,24 +385,6 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
               <Check className="h-4 w-4 mr-2" />
               Completed
             </Button>
-            <Button 
-              className="flex-1" 
-              variant={todayLog?.status === 'missed' ? "secondary" : "outline"}
-              onClick={() => checkInHabit('missed')}
-              disabled={isCheckingIn}
-            >
-              <X className="h-4 w-4 mr-2" />
-              Missed
-            </Button>
-            <Button 
-              className="flex-1" 
-              variant={todayLog?.status === 'skipped' ? "secondary" : "outline"}
-              onClick={() => checkInHabit('skipped')}
-              disabled={isCheckingIn}
-            >
-              <CalendarIcon className="h-4 w-4 mr-2" />
-              Skip
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -454,11 +436,7 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
                   }))}
                   classForValue={(value) => {
                     if (!value || value.count === 0) {
-                      return value && value.status === 'skipped' 
-                        ? 'color-scale-skip' 
-                        : value && value.status === 'missed'
-                          ? 'color-scale-miss'
-                          : 'color-empty';
+                      return 'color-empty';
                     }
                     return 'color-scale-complete';
                   }}
@@ -474,14 +452,6 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-success rounded-full"></div>
                     <span className="text-xs text-muted-foreground">Completed</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-destructive rounded-full"></div>
-                    <span className="text-xs text-muted-foreground">Missed</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "hsl(var(--warning))" }}></div>
-                    <span className="text-xs text-muted-foreground">Skipped</span>
                   </div>
                 </div>
               </div>
@@ -506,18 +476,14 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
                         <div className={`w-3 h-3 rounded-full ${
                           log.status === 'completed' 
                             ? 'bg-success' 
-                            : log.status === 'missed' 
-                              ? 'bg-destructive' 
-                              : ''
-                        }`} style={log.status === 'skipped' ? { backgroundColor: "hsl(var(--warning))" } : undefined}></div>
+                            : ''
+                        }`}></div>
                         <span className="font-medium">{formatLogDate(log.completion_date)}</span>
                       </div>
                       <Badge variant={
                         log.status === 'completed' 
                           ? 'default' 
-                          : log.status === 'missed' 
-                            ? 'destructive' 
-                            : 'warning'
+                          : 'warning'
                       }>
                         {log.status.charAt(0).toUpperCase() + log.status.slice(1)}
                       </Badge>

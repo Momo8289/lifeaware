@@ -29,7 +29,7 @@ interface Habit {
 interface HabitWithStats extends Habit {
   current_streak: number;
   streak_goal?: number;
-  todayStatus?: 'completed' | 'pending' | 'missed' | 'skipped';
+  todayStatus?: 'completed' | 'pending';
 }
 
 export default function HabitsPage() {
@@ -80,7 +80,7 @@ export default function HabitsPage() {
         return {
           ...habit,
           current_streak: 0, // Will be updated from streak calculation
-          todayStatus: todayLog ? todayLog.status as 'completed' | 'pending' | 'missed' | 'skipped' : 'pending'
+          todayStatus: todayLog ? todayLog.status as 'completed' | 'pending' : 'pending'
         };
       });
 
@@ -111,7 +111,19 @@ export default function HabitsPage() {
     return true;
   });
 
-  const updateHabitStatus = async (habitId: string, status: 'completed' | 'missed' | 'skipped') => {
+  // Sort habits so that pending habits appear first and completed habits appear last
+  const sortedHabits = [...filteredHabits].sort((a, b) => {
+    // Define priority order: pending > completed
+    const priority = {
+      'pending': 0,
+      'completed': 1
+    };
+    
+    // Compare by priority (lower number = higher priority)
+    return (priority[a.todayStatus || 'pending'] - priority[b.todayStatus || 'pending']);
+  });
+
+  const updateHabitStatus = async (habitId: string, status: 'completed') => {
     try {
       setIsUpdating(habitId);
       const today = new Date().toISOString().split('T')[0];
@@ -243,7 +255,7 @@ export default function HabitsPage() {
         <TabsContent value={activeTab} className="mt-6">
           {isLoading ? (
             <p>Loading habits...</p>
-          ) : filteredHabits.length === 0 ? (
+          ) : sortedHabits.length === 0 ? (
             <div className="text-center py-12">
               <h3 className="text-lg font-semibold">No habits found</h3>
               <p className="text-muted-foreground">Create your first habit to start tracking your progress</p>
@@ -256,7 +268,7 @@ export default function HabitsPage() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {filteredHabits.map((habit) => (
+              {sortedHabits.map((habit) => (
                 <HabitCard key={habit.id} habit={habit} onUpdateStatus={updateHabitStatus} />
               ))}
             </div>
@@ -287,7 +299,7 @@ function StatsCard({ title, value, icon }: { title: string; value: string; icon:
 
 function HabitCard({ habit, onUpdateStatus }: { 
   habit: HabitWithStats; 
-  onUpdateStatus: (habitId: string, status: 'completed' | 'missed' | 'skipped') => Promise<void>;
+  onUpdateStatus: (habitId: string, status: 'completed') => Promise<void>;
 }) {
   const [isUpdating, setIsUpdating] = useState(false);
   
@@ -306,8 +318,6 @@ function HabitCard({ habit, onUpdateStatus }: {
 
   const todayStatusColor = () => {
     if (habit.todayStatus === 'completed') return 'bg-green-500';
-    if (habit.todayStatus === 'missed') return 'bg-red-500';
-    if (habit.todayStatus === 'skipped') return 'bg-blue-500';
     return 'bg-yellow-500';
   };
 
@@ -337,11 +347,7 @@ function HabitCard({ habit, onUpdateStatus }: {
             <span className="text-sm font-medium">
               {habit.todayStatus === 'completed' 
                 ? 'Completed' 
-                : habit.todayStatus === 'missed' 
-                  ? 'Missed' 
-                  : habit.todayStatus === 'skipped'
-                    ? 'Skipped'
-                    : 'Pending'}
+                : 'Pending'}
             </span>
           </div>
           <div className="flex items-center gap-1">
@@ -356,7 +362,7 @@ function HabitCard({ habit, onUpdateStatus }: {
         </div>
       </div>
       
-      <div className="flex flex-col sm:flex-row gap-2 p-4 pt-0">
+      <div className="flex p-4 pt-0">
         <Button 
           variant={habit.todayStatus === 'completed' ? 'secondary' : 'outline'} 
           size="sm" 
@@ -370,34 +376,6 @@ function HabitCard({ habit, onUpdateStatus }: {
         >
           <Check className="h-4 w-4 mr-2" />
           Completed
-        </Button>
-        <Button 
-          variant={habit.todayStatus === 'missed' ? 'secondary' : 'outline'} 
-          size="sm" 
-          className="flex-1"
-          disabled={isUpdating}
-          onClick={async () => {
-            setIsUpdating(true);
-            await onUpdateStatus(habit.id, 'missed');
-            setIsUpdating(false);
-          }}
-        >
-          <X className="h-4 w-4 mr-2" />
-          Missed
-        </Button>
-        <Button 
-          variant={habit.todayStatus === 'skipped' ? 'secondary' : 'outline'} 
-          size="sm" 
-          className="flex-1"
-          disabled={isUpdating}
-          onClick={async () => {
-            setIsUpdating(true);
-            await onUpdateStatus(habit.id, 'skipped');
-            setIsUpdating(false);
-          }}
-        >
-          <Calendar className="h-4 w-4 mr-2" />
-          Skip
         </Button>
       </div>
     </Card>
