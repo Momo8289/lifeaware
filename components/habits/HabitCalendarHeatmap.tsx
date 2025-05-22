@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { format } from "date-fns"
 import * as React from "react"
+import { Calendar } from "lucide-react"
 
 interface HabitLog {
   id: string
@@ -44,11 +45,14 @@ export function HabitCalendarHeatmap({
   return (
     <Card>
       <style jsx>{styles}</style>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+      <CardHeader className="pb-4 bg-gradient-to-r from-indigo-500/10 to-transparent">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-indigo-500" />
+          {title}
+        </CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-2">
         <div className="space-y-6">
           {/* Container with relative positioning for month labels */}
           <div className="relative">
