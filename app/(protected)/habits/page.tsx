@@ -10,6 +10,9 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { toast } from '@/components/ui/use-toast';
+import { HabitCard } from '@/components/habits/HabitCard';
+import { HabitInsights } from '@/components/habits/HabitInsights';
+import { HabitGamification } from '@/components/habits/HabitGamification';
 
 // Types
 interface Habit {
@@ -26,16 +29,28 @@ interface Habit {
   updated_at: string;
 }
 
+interface HabitLog {
+  id: string;
+  habit_id: string;
+  completion_date: string;
+  status: 'completed';
+  notes: string | null;
+  created_at: string;
+}
+
 interface HabitWithStats extends Habit {
   current_streak: number;
-  streak_goal?: number;
+  completions: number;
+  total_days: number;
   todayStatus?: 'completed' | 'pending';
 }
 
 export default function HabitsPage() {
   const [habits, setHabits] = useState<HabitWithStats[]>([]);
+  const [logs, setLogs] = useState<HabitLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('habits');
+  const [habitListTab, setHabitListTab] = useState('all');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   const fetchHabits = async () => {
@@ -65,32 +80,50 @@ export default function HabitsPage() {
         return;
       }
 
+      // Fetch all logs for stats calculation
+      const { data: allLogsData, error: allLogsError } = await supabase
+        .from('habit_logs')
+        .select('*')
+        .order('completion_date', { ascending: false });
+
+      if (allLogsError) throw allLogsError;
+      
+      setLogs(allLogsData || []);
+
       // Fetch today's logs to determine habit status
       const today = new Date().toISOString().split('T')[0];
-      const { data: logsData, error: logsError } = await supabase
+      const { data: todayLogsData, error: todayLogsError } = await supabase
         .from('habit_logs')
         .select('habit_id, status')
         .eq('completion_date', today);
 
-      if (logsError) throw logsError;
+      if (todayLogsError) throw todayLogsError;
 
       // Process habits with stats
-      const habitsWithStats: HabitWithStats[] = habitsData.map((habit: Habit) => {
-        const todayLog = logsData?.find((log: any) => log.habit_id === habit.id);
-        return {
-          ...habit,
-          current_streak: 0, // Will be updated from streak calculation
-          todayStatus: todayLog ? todayLog.status as 'completed' | 'pending' : 'pending'
-        };
-      });
-
-      // For each habit, fetch streak info
-      for (const habit of habitsWithStats) {
-        const { data: streakData } = await supabase
-          .rpc('get_habit_streak', { habit_uuid: habit.id });
-        
-        habit.current_streak = streakData || 0;
-      }
+      const habitsWithStats: HabitWithStats[] = await Promise.all(
+        habitsData.map(async (habit: Habit) => {
+          const habitLogs = allLogsData?.filter((log: HabitLog) => log.habit_id === habit.id) || [];
+          const todayLog = todayLogsData?.find((log: any) => log.habit_id === habit.id);
+          
+          // Get streak info
+          const { data: streakData } = await supabase
+            .rpc('get_habit_streak', { habit_uuid: habit.id });
+            
+          // Calculate total days since habit creation
+          const startDate = new Date(habit.start_date);
+          const now = new Date();
+          const diffTime = Math.abs(now.getTime() - startDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          return {
+            ...habit,
+            current_streak: streakData || 0,
+            completions: habitLogs.length,
+            total_days: diffDays,
+            todayStatus: todayLog ? todayLog.status as 'completed' | 'pending' : 'pending'
+          };
+        })
+      );
 
       setHabits(habitsWithStats);
     } catch (error) {
@@ -105,9 +138,9 @@ export default function HabitsPage() {
   }, []);
 
   const filteredHabits = habits.filter(habit => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'active') return habit.is_active;
-    if (activeTab === 'inactive') return !habit.is_active;
+    if (habitListTab === 'all') return true;
+    if (habitListTab === 'active') return habit.is_active;
+    if (habitListTab === 'inactive') return !habit.is_active;
     return true;
   });
 
@@ -179,7 +212,10 @@ export default function HabitsPage() {
           habit.id === habitId 
             ? { 
                 ...habit, 
-                todayStatus: isToggleOff ? 'pending' : status 
+                todayStatus: isToggleOff ? 'pending' : status,
+                // If completing, increment streak, otherwise reset it
+                current_streak: isToggleOff ? Math.max(0, habit.current_streak - 1) : habit.current_streak + 1,
+                completions: isToggleOff ? habit.completions - 1 : habit.completions + 1
               } 
             : habit
         )
@@ -246,33 +282,84 @@ export default function HabitsPage() {
         />
       </div>
 
-      <Tabs defaultValue="all" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="habits" className="w-full" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3 max-w-md">
-          <TabsTrigger value="all">All Habits</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="inactive">Inactive</TabsTrigger>
+          <TabsTrigger value="habits">Habits</TabsTrigger>
+          <TabsTrigger value="insights">Insights</TabsTrigger>
+          <TabsTrigger value="rewards">Rewards</TabsTrigger>
         </TabsList>
-        <TabsContent value={activeTab} className="mt-6">
+        
+        <TabsContent value="habits" className="mt-6 space-y-4">
+          <div className="flex items-center">
+            <TabsList className="mr-auto">
+              <TabsTrigger 
+                value="all" 
+                onClick={() => setHabitListTab('all')}
+                data-state={habitListTab === 'all' ? 'active' : ''}
+              >
+                All
+              </TabsTrigger>
+              <TabsTrigger 
+                value="active" 
+                onClick={() => setHabitListTab('active')}
+                data-state={habitListTab === 'active' ? 'active' : ''}
+              >
+                Active
+              </TabsTrigger>
+              <TabsTrigger 
+                value="inactive" 
+                onClick={() => setHabitListTab('inactive')}
+                data-state={habitListTab === 'inactive' ? 'active' : ''}
+              >
+                Inactive
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          
           {isLoading ? (
-            <p>Loading habits...</p>
-          ) : sortedHabits.length === 0 ? (
-            <div className="text-center py-12">
-              <h3 className="text-lg font-semibold">No habits found</h3>
-              <p className="text-muted-foreground">Create your first habit to start tracking your progress</p>
-              <Link href="/habits/new">
-                <Button className="mt-4">
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Create Habit
-                </Button>
-              </Link>
+            <div className="py-12 text-center text-muted-foreground">
+              Loading your habits...
             </div>
-          ) : (
-            <div className="grid gap-4">
-              {sortedHabits.map((habit) => (
-                <HabitCard key={habit.id} habit={habit} onUpdateStatus={updateHabitStatus} />
+          ) : sortedHabits.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {sortedHabits.map(habit => (
+                <HabitCard 
+                  key={habit.id} 
+                  habit={habit} 
+                  onUpdateStatus={updateHabitStatus}
+                  isUpdating={isUpdating === habit.id}
+                />
               ))}
             </div>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center space-y-4">
+                <div className="mx-auto bg-muted rounded-full w-12 h-12 flex items-center justify-center">
+                  <CheckCircle2 className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium">No habits found</h3>
+                  <p className="text-muted-foreground mt-1">
+                    You haven't created any habits yet. Add your first habit to get started.
+                  </p>
+                </div>
+                <Button asChild className="mt-2">
+                  <Link href="/habits/new">
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Create First Habit
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           )}
+        </TabsContent>
+        
+        <TabsContent value="insights" className="mt-6">
+          <HabitInsights habits={habits} logs={logs} />
+        </TabsContent>
+        
+        <TabsContent value="rewards" className="mt-6">
+          <HabitGamification habits={habits} logs={logs} />
         </TabsContent>
       </Tabs>
     </div>
@@ -282,102 +369,13 @@ export default function HabitsPage() {
 function StatsCard({ title, value, icon }: { title: string; value: string; icon: React.ReactNode }) {
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between space-x-4">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold">{value}</p>
-          </div>
-          <div className="p-2 bg-background border rounded-full">
-            {icon}
-          </div>
+      <CardContent className="p-6 flex flex-col items-center text-center space-y-2">
+        <div className="p-2 bg-muted rounded-full">
+          {icon}
         </div>
+        <CardTitle className="text-xl">{value}</CardTitle>
+        <CardDescription>{title}</CardDescription>
       </CardContent>
-    </Card>
-  );
-}
-
-function HabitCard({ habit, onUpdateStatus }: { 
-  habit: HabitWithStats; 
-  onUpdateStatus: (habitId: string, status: 'completed') => Promise<void>;
-}) {
-  const [isUpdating, setIsUpdating] = useState(false);
-  
-  const frequencyText = () => {
-    if (habit.frequency === 'daily') return 'Daily';
-    if (habit.frequency === 'weekly') return 'Weekly';
-    if (habit.frequency === 'custom') {
-      const days = habit.frequency_days.map(day => {
-        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        return dayNames[day];
-      });
-      return days.join(', ');
-    }
-    return '';
-  };
-
-  const todayStatusColor = () => {
-    if (habit.todayStatus === 'completed') return 'bg-green-500';
-    return 'bg-yellow-500';
-  };
-
-  return (
-    <Card className="overflow-hidden transition-all hover:shadow-md">
-      <div className="flex justify-between p-6">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-lg">{habit.name}</h3>
-            {habit.category && (
-              <Badge variant="outline" className="ml-2">
-                {habit.category}
-              </Badge>
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground">{habit.description}</p>
-          <div className="flex items-center gap-2 mt-2">
-            <Badge variant="secondary">{frequencyText()}</Badge>
-            {habit.time_of_day && (
-              <Badge variant="outline">{habit.time_of_day}</Badge>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-1">
-            <div className={`w-3 h-3 rounded-full ${todayStatusColor()}`} />
-            <span className="text-sm font-medium">
-              {habit.todayStatus === 'completed' 
-                ? 'Completed' 
-                : 'Pending'}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Flame className="h-4 w-4 text-orange-500" />
-            <span className="text-sm font-medium">Streak: {habit.current_streak}</span>
-          </div>
-          <Link href={`/habits/${habit.id}`}>
-            <Button variant="ghost" size="sm" className="mt-2">
-              View Details
-            </Button>
-          </Link>
-        </div>
-      </div>
-      
-      <div className="flex p-4 pt-0">
-        <Button 
-          variant={habit.todayStatus === 'completed' ? 'secondary' : 'outline'} 
-          size="sm" 
-          className="flex-1"
-          disabled={isUpdating}
-          onClick={async () => {
-            setIsUpdating(true);
-            await onUpdateStatus(habit.id, 'completed');
-            setIsUpdating(false);
-          }}
-        >
-          <Check className="h-4 w-4 mr-2" />
-          Completed
-        </Button>
-      </div>
     </Card>
   );
 } 

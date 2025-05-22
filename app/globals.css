@@ -91,7 +91,6 @@
     @apply bg-background text-foreground;
   }
 }
-
 /* Add custom styles for react-calendar-heatmap */
 .react-calendar-heatmap .color-scale-complete { 
   fill: hsl(var(--success)); 
@@ -105,3 +104,4 @@
 .react-calendar-heatmap .color-empty { 
   fill: var(--background); 
 }
+

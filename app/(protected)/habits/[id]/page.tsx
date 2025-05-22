@@ -29,6 +29,31 @@ import { buttonVariants } from "@/components/ui/button";
 import { HabitProgressChart } from '@/components/habits/HabitProgressChart';
 import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
+import { Progress } from '@/components/ui/progress';
+
+// Custom styles for the heatmap grid
+const styles = `
+  .grid-cols-52 {
+    grid-template-columns: repeat(52, minmax(0, 1fr));
+  }
+  
+  .heatmap-cell {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .day-label-grid {
+    display: grid;
+    grid-template-rows: repeat(7, 12px);
+    grid-gap: 4px;
+    align-items: center;
+  }
+  
+  .grid-rows-7 {
+    grid-template-rows: repeat(7, 12px);
+    grid-gap: 4px;
+  }
+`;
 
 interface Habit {
   id: string;
@@ -323,6 +348,7 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="container py-6 space-y-6">
+      <style jsx>{styles}</style>
       <div className="flex items-center mb-8">
         <Link href="/habits" className="mr-4">
           <Button variant="ghost" size="icon">
@@ -332,12 +358,18 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold tracking-tight">{habit.name}</h1>
-            <Link href={`/habits/${id}/edit`}>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center mr-4">
+                <Flame className="h-5 w-5 text-orange-500 mr-1" />
+                <span className="font-medium">{stats?.current_streak || 0} day streak</span>
+              </div>
+              <Link href={`/habits/${id}/edit`}>
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              </Link>
+            </div>
           </div>
           <div className="flex items-center gap-2 mt-1">
             {habit.category && (
@@ -354,43 +386,15 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
           {habit.description && (
             <p className="text-muted-foreground mt-2">{habit.description}</p>
           )}
+          <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4" />
+            <span>Started on {format(parseISO(habit.start_date), 'MMM dd, yyyy')}</span>
+          </div>
         </div>
       </div>
 
-      {/* Check-in section */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Today's Progress</CardTitle>
-          <CardDescription>Check in your habit for today</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">Started on {format(parseISO(habit.start_date), 'MMM dd, yyyy')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Flame className="h-4 w-4 text-orange-500" />
-              <span className="text-sm font-medium">Current streak: {stats?.current_streak || 0} days</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-2 mt-4">
-            <Button 
-              className="flex-1" 
-              variant={todayLog?.status === 'completed' ? "secondary" : "outline"}
-              onClick={() => checkInHabit('completed')}
-              disabled={isCheckingIn}
-            >
-              <Check className="h-4 w-4 mr-2" />
-              Completed
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Stats and History */}
-      <Tabs defaultValue="stats" className="w-full mt-8">
+      <Tabs defaultValue="stats" className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-md">
           <TabsTrigger value="stats">Statistics</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
@@ -426,32 +430,113 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <CalendarHeatmap
-                  startDate={subYears(new Date(), 1)}
-                  endDate={new Date()}
-                  values={logs.map(log => ({
-                    date: log.completion_date.split('T')[0],
-                    count: log.status === 'completed' ? 1 : 0,
-                    status: log.status
-                  }))}
-                  classForValue={(value) => {
-                    if (!value || value.count === 0) {
-                      return 'color-empty';
-                    }
-                    return 'color-scale-complete';
-                  }}
-                  tooltipDataAttrs={(value) => {
-                    if (!value || !value.date) return {} as TooltipDataAttrs;
-                    return {
-                      'data-tip': `${value.date}: ${value.status || 'No data'}`,
-                    } as TooltipDataAttrs;
-                  }}
-                />
+                {/* Current month completion rate */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-sm font-medium">Current Month</h4>
+                    <span className="text-sm text-muted-foreground">{Math.round(stats?.completion_rate || 0)}%</span>
+                  </div>
+                  <Progress value={stats?.completion_rate || 0} className="h-2" />
+                </div>
+
+                {/* Calendar heatmap with shadcn styling */}
+                <div className="pt-4">
+                  <h4 className="text-sm font-medium mb-4">Year Activity</h4>
+                  
+                  {/* Container with relative positioning for month labels */}
+                  <div className="relative">
+                    <div className="flex text-xs text-muted-foreground h-5 mb-1 overflow-hidden">
+                      {/* Month labels - Jan to Dec */}
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((month) => {
+                        // Create a date for the first of each month of the current year
+                        const date = new Date(new Date().getFullYear(), month, 1);
+                        
+                        // Calculate position based on month (0-11)
+                        // Each month gets approximately 4.33 weeks (52/12)
+                        const weekPosition = Math.floor(month * (52 / 12));
+                        
+                        // Center the label by adding half a month's width
+                        const centeredPosition = weekPosition + Math.floor((52 / 12) / 2);
+                        
+                        // Convert to percentage
+                        const leftPosition = `${(centeredPosition / 52) * 100}%`;
+                        
+                        return (
+                          <div 
+                            key={month} 
+                            className="absolute font-medium" 
+                            style={{ left: leftPosition }}
+                          >
+                            {format(date, 'MMM')}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    <div className="grid grid-cols-52 gap-1">
+                      {Array.from({ length: 52 }).map((_, weekIndex) => {
+                        // For January to December display of current year
+                        const currentYear = new Date().getFullYear();
+                        const startOfYear = new Date(currentYear, 0, 1);
+                        
+                        // Adjust start date to previous Sunday
+                        const dayOfWeek = startOfYear.getDay();
+                        const adjustedStart = new Date(startOfYear);
+                        if (dayOfWeek !== 0) {
+                          adjustedStart.setDate(adjustedStart.getDate() - dayOfWeek);
+                        }
+                        
+                        // Calculate the start date for this week column
+                        const weekStart = new Date(adjustedStart);
+                        weekStart.setDate(adjustedStart.getDate() + (weekIndex * 7));
+                        
+                        return (
+                          <div key={weekIndex} className="grid grid-rows-7">
+                            {Array.from({ length: 7 }).map((_, dayIndex) => {
+                              // Calculate the date for this cell
+                              const date = new Date(weekStart);
+                              date.setDate(weekStart.getDate() + dayIndex);
+                              const dateStr = date.toISOString().split('T')[0];
+                              
+                              // Check if this date has a log
+                              const hasLog = logs.some(log => log.completion_date.split('T')[0] === dateStr);
+                              
+                              // Check if this date is in the future
+                              const isFuture = date > new Date();
+                              
+                              return (
+                                <div
+                                  key={dayIndex}
+                                  className={`heatmap-cell rounded-sm ${
+                                    isFuture 
+                                      ? 'bg-muted/10' 
+                                      : hasLog
+                                        ? 'bg-success hover:bg-success/80'
+                                        : 'bg-muted/20 hover:bg-muted/30'
+                                  }`}
+                                  title={`${dateStr}: ${hasLog ? 'Completed' : 'No data'}`}
+                                />
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
                 
-                <div className="flex justify-center gap-4 mt-4">
+                <div className="flex justify-start gap-4 mt-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-success rounded-full"></div>
+                    <div className="heatmap-cell bg-success rounded-sm"></div>
                     <span className="text-xs text-muted-foreground">Completed</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="heatmap-cell bg-muted/20 rounded-sm"></div>
+                    <span className="text-xs text-muted-foreground">Not completed</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="heatmap-cell bg-muted/10 rounded-sm"></div>
+                    <span className="text-xs text-muted-foreground">Future</span>
                   </div>
                 </div>
               </div>
@@ -506,9 +591,9 @@ function StatCard({ title, value, icon }: { title: string; value: string; icon: 
         <div className="flex items-center justify-between space-x-4">
           <div>
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold">{value}</p>
+            <p className="text-2xl font-bold mt-1">{value}</p>
           </div>
-          <div className="p-2 bg-background border rounded-full">
+          <div className="p-2.5 bg-primary/10 border rounded-lg">
             {icon}
           </div>
         </div>
