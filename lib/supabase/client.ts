@@ -6,21 +6,46 @@ export const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Simplified method to clear all auth data
-export const clearAuthData = async () => {
+// Logout function to clear all auth data
+export async function logoutUser() {
   try {
-    // Try to sign out
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.log('Signout error:', e);
+    await supabase.auth.signOut({ scope: 'local' });
+  } catch (e) {
+    // Silent error in production
+  }
+
+  try {
+    await clearAuthDataFromStorage();
+  } catch (e) {
+    // Silent error in production
+  }
+}
+
+// Helper to clear all storage
+export async function clearAuthDataFromStorage() {
+  try {
+    // Clear cookies
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+
+    // Clear localStorage
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
+
+    // Clear sessionStorage
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.clear();
     }
     
     // Get the project ID which is used in cookie names
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const projectId = supabaseUrl.match(/https:\/\/([^.]+)\./)?.[1] || '';
     
-    // Clear auth cookies
+    // Clear specific auth cookies
     document.cookie.split(';').forEach(cookie => {
       const [name] = cookie.trim().split('=');
       if (name && (
@@ -32,25 +57,25 @@ export const clearAuthData = async () => {
       }
     });
     
-    // Clear localStorage items
-    try {
-      if (projectId) {
+    // Clear specific localStorage items
+    if (projectId) {
+      try {
         localStorage.removeItem(`sb-${projectId}-auth-token`);
+      } catch (e) {
+        // Silent error in production
       }
-    } catch (e) {
-      console.log('Storage clear error:', e);
     }
     
     return true;
-  } catch (error) {
-    console.error('Error clearing auth data:', error);
+  } catch (e) {
+    // Silent error in production
     return false;
   }
-};
+}
 
 // Simplified helper function to handle account deletion redirect
 export const handleAccountDeletion = () => {
-  clearAuthData().finally(() => {
+  logoutUser().finally(() => {
     window.location.href = '/';
   });
 }; 

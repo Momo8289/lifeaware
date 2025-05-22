@@ -113,7 +113,7 @@ export default function AccountPage() {
         .single()
         
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error)
+        // Silent error handling for production
       }
       
       setProfile(profileData || null)
@@ -183,7 +183,7 @@ export default function AccountPage() {
         .map((result: any) => result.reason)
       
       if (errors.length > 0) {
-        console.error('Errors during account update:', errors)
+        // Silent error handling for production
         throw errors[0]
       }
       
@@ -192,7 +192,7 @@ export default function AccountPage() {
         description: "Your account information has been updated successfully.",
       })
     } catch (error: any) {
-      console.error('Error updating account:', error)
+      // Silent error handling for production
       toast({
         title: "Error updating account",
         description: error.message || "Something went wrong. Please try again.",
@@ -254,7 +254,7 @@ export default function AccountPage() {
         handleAccountDeletion();
       }, 1000)
     } catch (error: any) {
-      console.error('Error deleting account:', error)
+      // Silent error handling for production
       toast({
         title: "Error deleting account",
         description: error.message || "Something went wrong. Please try again.",

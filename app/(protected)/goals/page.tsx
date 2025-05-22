@@ -48,7 +48,7 @@ export default function GoalsPage() {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          console.error('User not authenticated');
+          // Silent error handling for production
           setGoals([]);
           setIsLoading(false);
           return;
@@ -103,7 +103,7 @@ export default function GoalsPage() {
 
         setGoals(goalsWithStats);
       } catch (error) {
-        console.error('Error fetching goals:', error);
+        // Silent error handling for production
       } finally {
         setIsLoading(false);
       }

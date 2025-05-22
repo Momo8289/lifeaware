@@ -63,7 +63,7 @@ export default function SignUpPage() {
         provider,
         options: {
           scopes: provider === 'azure' ? 'email user.read profile openid' : 'email',
-          redirectTo: getURL(),
+          redirectTo: `${getURL()}auth/callback?redirect_to=/dashboard`,
         }
       });
       if (error) {

@@ -58,6 +58,11 @@ export const updateSession = async (request: NextRequest) => {
       path === '/forgot-password' ||
       path.startsWith('/auth/')
     ) {
+      // Check if the user is already logged in - if so, redirect to dashboard
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
       return response;
     }
 
@@ -81,8 +86,20 @@ export const updateSession = async (request: NextRequest) => {
 
     return response;
   } catch (e) {
-    console.error("Middleware error:", e);
-    // Return the response instead of creating a new one to avoid potential loops
+    // Silent error handling in production
+    // For protected routes, redirect to sign-in
+    // For others, just return the original response to avoid loops
+    const path = request.nextUrl.pathname;
+    const isProtectedRoute = 
+      path.startsWith('/goals') || 
+      path.startsWith('/habits') || 
+      path.startsWith('/dashboard') || 
+      path.startsWith('/settings');
+    
+    if (isProtectedRoute) {
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    }
+    
     return response;
   }
 };

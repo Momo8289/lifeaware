@@ -6,6 +6,7 @@ import { ThemeSwitcher } from './theme-switcher';
 import { useAuth } from './AuthProvider';
 import { Button } from '@/components/ui/button';
 import { HeartPulse } from 'lucide-react';
+import { LayoutDashboardIcon } from 'lucide-react';
 
 export default function MainLayout({
   children,
@@ -22,27 +23,28 @@ export default function MainLayout({
             <HeartPulse className="h-6 w-6" />
             <span>Lifeaware</span>
           </Link>
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-4 md:gap-6">
             {user ? (
-              <div className="flex items-center gap-4">
-                <Link href="/dashboard" className="text-sm font-medium hover:text-primary">
-                  Dashboard
+              <div className="flex items-center gap-2 md:gap-4">
+                <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 rounded-md px-2.5 py-1.5 md:px-3 md:py-2 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium transition-colors">
+                  <LayoutDashboardIcon className="h-4 w-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
                 </Link>
                 <form action="/sign-out" method="post">
-                  <Button variant="ghost" className="text-sm font-medium">
+                  <Button variant="ghost" size="sm" className="text-sm font-medium">
                     Sign Out
                   </Button>
                 </form>
               </div>
             ) : (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4">
                 <Link href="/sign-in">
-                  <Button variant="ghost" className="text-sm font-medium">
+                  <Button variant="ghost" size="sm" className="text-sm font-medium">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/sign-up">
-                  <Button className="text-sm font-medium">
+                  <Button size="sm" className="text-sm font-medium">
                     Sign Up
                   </Button>
                 </Link>

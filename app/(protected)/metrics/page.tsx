@@ -62,7 +62,7 @@ export default function MetricsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        console.error('User not authenticated');
+        // Silent error handling for production
         setMetrics([]);
         setIsLoading(false);
         return;
@@ -114,7 +114,7 @@ export default function MetricsPage() {
 
       setMetrics(metricsWithStats);
     } catch (error) {
-      console.error('Error fetching metrics:', error);
+      // Silent error handling for production
     } finally {
       setIsLoading(false);
     }

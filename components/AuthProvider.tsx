@@ -55,9 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await supabase.auth.updateUser({
           data: { display_name: displayName }
         });
-        console.log('Display name updated from OAuth provider');
+        // Success silently
       } catch (error) {
-        console.error('Error updating display name:', error);
+        // Silent error handling for production
       }
     }
   };

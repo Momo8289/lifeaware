@@ -116,7 +116,7 @@ export default function NewHabitPage() {
         .select();
 
       if (error) {
-        console.error('Supabase error:', error);
+        // Silent error handling for production
         throw new Error(error.message || 'Failed to create habit');
       }
       
@@ -126,7 +126,7 @@ export default function NewHabitPage() {
       });
       router.push('/habits');
     } catch (error: any) {
-      console.error('Error creating habit:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: typeof error === 'object' && error.message 

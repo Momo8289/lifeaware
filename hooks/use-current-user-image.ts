@@ -37,7 +37,7 @@ export function useCurrentUserImage() {
             }
           }
         } catch (error) {
-          console.error('Error fetching avatar:', error)
+          // Silent error handling for production
         }
       }
     }

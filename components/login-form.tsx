@@ -41,12 +41,28 @@ export function LoginForm({
     e.preventDefault()
     setError("")
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    setLoading(false)
-    if (error) {
-      setError(error.message)
-    } else {
-      router.push("/")
+    
+    try {
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password })
+      
+      if (error) {
+        setError(error.message)
+      } else {
+        // Ensure session is established before redirecting
+        const { data: sessionData } = await supabase.auth.getSession()
+        
+        if (sessionData?.session) {
+          // Force complete page reload and direct navigation
+          window.location.href = "/dashboard"
+        } else {
+          setError("Session could not be established. Please try again.")
+        }
+      }
+    } catch (err) {
+      setError("An unexpected error occurred.")
+      // Silent in production
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -58,7 +74,7 @@ export function LoginForm({
         provider,
         options: {
           scopes: provider === 'azure' ? 'email user.read profile openid' : 'email',
-          redirectTo: getURL(),
+          redirectTo: `${getURL()}auth/callback?redirect_to=/dashboard`,
         }
       })
       if (error) {

@@ -27,6 +27,7 @@ import {
 import { usePathname } from "next/navigation"
 import { useCurrentUserName } from "@/hooks/use-current-user-name"
 import { supabase } from "@/lib/supabase/client"
+import { createRobustSubscription } from "@/lib/supabase/realtime"
 
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
@@ -124,6 +125,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   
   // Fetch the count of active reminders
   React.useEffect(() => {
+    let cleanupFunction: (() => void) | undefined;
+    
     const fetchReminderCount = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -137,62 +140,66 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         if (error) throw error;
         setReminderCount(count || 0);
       } catch (error) {
-        console.error('Error fetching reminder count:', error);
+        // Silent error handling for production
       }
     };
 
-    fetchReminderCount();
-    
-    // Listen for the custom refresh event
-    const handleRefreshReminders = () => {
-      fetchReminderCount();
+    // Only run in protected routes where the pathname indicates a logged-in user
+    // This is a quick way to prevent this from running on the landing page
+    if (!pathname || pathname === '/' || pathname.startsWith('/sign-')) {
+      return; // Don't set up any listeners for non-app routes
+    }
+
+    // Check if user is authenticated before setting up listeners
+    const checkAuthAndSetupListeners = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // If no user is authenticated, don't set up any listeners
+        if (!user) return;
+        
+        // Fetch initial count
+        fetchReminderCount();
+        
+        // Listen for the custom refresh event
+        const handleRefreshReminders = () => {
+          fetchReminderCount();
+        };
+        
+        window.addEventListener('refresh-reminders', handleRefreshReminders);
+
+        // Set up robust subscription with our new helper
+        cleanupFunction = createRobustSubscription(
+          supabase,
+          user.id,
+          'reminders',
+          fetchReminderCount,
+          'status=eq.active'
+        );
+        
+        // Add manual refresh interval as a fallback
+        const intervalId = setInterval(fetchReminderCount, 30000);
+        
+        // Update cleanup to include event listener and interval
+        const originalCleanup = cleanupFunction;
+        cleanupFunction = () => {
+          window.removeEventListener('refresh-reminders', handleRefreshReminders);
+          clearInterval(intervalId);
+          if (originalCleanup) originalCleanup();
+        };
+      } catch (err) {
+        // Silent error handling for production
+      }
     };
     
-    window.addEventListener('refresh-reminders', handleRefreshReminders);
-
-    // Set up a subscription to keep the count updated
-    const channel = supabase
-      .channel('reminder-count-channel')
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'reminders',
-          filter: 'status=eq.active'
-        }, 
-        () => fetchReminderCount()
-      )
-      .on('postgres_changes', 
-        { 
-          event: 'UPDATE', 
-          schema: 'public', 
-          table: 'reminders'
-        }, 
-        () => fetchReminderCount()
-      )
-      .on('postgres_changes', 
-        { 
-          event: 'DELETE', 
-          schema: 'public', 
-          table: 'reminders'
-        }, 
-        () => fetchReminderCount()
-      )
-      .subscribe((status) => {
-        if (status !== 'SUBSCRIBED') {
-          console.error('Failed to subscribe to reminder changes:', status);
-        }
-      });
-
-    // Manually refresh every 30 seconds as a fallback
-    const intervalId = setInterval(fetchReminderCount, 30000);
-
+    // Start the authentication check and listener setup
+    checkAuthAndSetupListeners();
+    
+    // Return cleanup function
     return () => {
-      window.removeEventListener('refresh-reminders', handleRefreshReminders);
-      clearInterval(intervalId);
-      supabase.removeChannel(channel);
+      if (cleanupFunction) cleanupFunction();
     };
-  }, []);
+  }, [pathname]);
   
   // Create a new array with isActive property set based on current path
   const navMainWithActive = React.useMemo(() => {

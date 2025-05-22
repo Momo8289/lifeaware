@@ -37,7 +37,7 @@ export function HabitRemindersTab() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        console.error('User not authenticated');
+        // Silent error handling for production
         setUpcomingHabits([]);
         setIsLoading(false);
         return;
@@ -84,7 +84,7 @@ export function HabitRemindersTab() {
 
       setUpcomingHabits(upcoming);
     } catch (error) {
-      console.error('Error fetching upcoming habits:', error);
+      // Silent error handling for production
     } finally {
       setIsLoading(false);
     }

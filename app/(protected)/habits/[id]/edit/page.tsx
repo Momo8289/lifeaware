@@ -80,7 +80,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          console.error('User not authenticated');
+          // Silent error handling for production
           toast({
             title: "Authentication Error",
             description: "You must be logged in to edit habits",
@@ -111,7 +111,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
           });
         }
       } catch (error) {
-        console.error('Error fetching habit:', error);
+        // Silent error handling for production
         toast({
           title: "Error",
           description: "Failed to load habit data",
@@ -176,7 +176,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
       });
       router.push(`/habits/${id}`);
     } catch (error: any) {
-      console.error('Error updating habit:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: error.message || "Failed to update habit",
@@ -205,7 +205,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
       });
       router.push('/habits');
     } catch (error: any) {
-      console.error('Error deleting habit:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: error.message || "Failed to delete habit",

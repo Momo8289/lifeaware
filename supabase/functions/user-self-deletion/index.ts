@@ -3,7 +3,7 @@ import { serve } from 'https://deno.land/std@0.182.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.14.0'
 import { corsHeaders } from '../_shared/cors.ts'
 
-console.log(`Function "user-self-deletion" up and running!`)
+// Removed console.log
 
 serve(async (req: Request) => {
   // Handle CORS preflight request
@@ -45,9 +45,9 @@ serve(async (req: Request) => {
         throw new Error('Invalid token: User ID not found in JWT payload');
       }
       
-      console.log('User ID extracted from token:', userId);
+      // Removed console.log
     } catch (jwtError) {
-      console.error('Error decoding JWT:', jwtError);
+      // Silent error handling for production
       throw new Error('Invalid authentication token');
     }
     
@@ -55,11 +55,11 @@ serve(async (req: Request) => {
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
     
     if (userError || !userData.user) {
-      console.error('Error verifying user:', userError);
+      // Silent error handling for production
       throw new Error('User not found or authentication failed');
     }
     
-    console.log('User authenticated:', userId);
+    // Removed console.log
     
     // Get user profile to retrieve avatar info
     const { data: profile, error: profileFetchError } = await supabaseAdmin
@@ -69,14 +69,14 @@ serve(async (req: Request) => {
       .single();
     
     if (profileFetchError && profileFetchError.code !== 'PGRST116') {
-      console.error('Error fetching profile:', profileFetchError);
+      // Silent error handling for production
       // Continue with user deletion even if profile fetch fails
     }
     
     // Delete avatar if it exists
     if (profile && profile.avatar_url) {
       try {
-        console.log('Attempting to delete avatar:', profile.avatar_url);
+        // Removed console.log
         
         // Check if avatar_url is a simple filename or full path
         let avatarFilename = profile.avatar_url;
@@ -93,39 +93,39 @@ serve(async (req: Request) => {
             .remove([avatarFilename]);
           
           if (avatarError) {
-            console.error('Error deleting avatar:', avatarError);
+            // Silent error handling for production
             // Continue with user deletion even if avatar deletion fails
           } else {
-            console.log('Avatar deleted successfully');
+            // Removed console.log
           }
         }
       } catch (avatarError) {
-        console.error('Error during avatar deletion process:', avatarError);
+        // Silent error handling for production
         // Continue with user deletion even if avatar deletion fails
       }
     }
     
     // Delete profile data
-    console.log('Deleting profile data for user:', userId);
+    // Removed console.log
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
       .eq('id', userId);
     
     if (profileError) {
-      console.error('Error deleting profile:', profileError);
+      // Silent error handling for production
       // Continue with user deletion even if profile deletion fails
     }
     
     // Delete the user from auth.users
-    console.log('Deleting auth record for user:', userId);
+    // Removed console.log
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
     
     if (deleteError) {
       throw new Error(`Failed to delete user: ${deleteError.message}`);
     }
     
-    console.log('User successfully deleted:', userId);
+    // Removed console.log
     
     return new Response(
       JSON.stringify({
@@ -138,7 +138,7 @@ serve(async (req: Request) => {
       }
     );
   } catch (error) {
-    console.error('Error in user-self-deletion:', error);
+    // Silent error handling for production
     
     return new Response(
       JSON.stringify({

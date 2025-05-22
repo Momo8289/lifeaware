@@ -39,7 +39,7 @@ export default function RemindersPage() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        console.error('User not authenticated');
+        // Silent error handling for production
         setReminders([]);
         setIsLoading(false);
         return;
@@ -55,7 +55,7 @@ export default function RemindersPage() {
       
       setReminders(data || []);
     } catch (error) {
-      console.error('Error fetching reminders:', error);
+      // Silent error handling for production
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +86,7 @@ export default function RemindersPage() {
         duration: 3000
       });
     } catch (error) {
-      console.error(`Error updating reminder status:`, error);
+      // Silent error handling for production
       toast({
         title: "Failed to update reminder",
         description: "An error occurred while updating the reminder status",

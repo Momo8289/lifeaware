@@ -112,7 +112,7 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          console.error('User not authenticated');
+          // Silent error handling for production
           setHabit(null);
           setIsLoading(false);
           return;
@@ -174,7 +174,7 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
           total_days: totalDays
         });
       } catch (error) {
-        console.error('Error fetching habit data:', error);
+        // Silent error handling for production
         toast({
           title: "Error",
           description: "Failed to load habit data",
@@ -296,7 +296,7 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
       }
       
     } catch (error: any) {
-      console.error('Error checking in habit:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: error.message || "Failed to update habit status",

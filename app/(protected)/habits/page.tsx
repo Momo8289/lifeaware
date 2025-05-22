@@ -61,7 +61,7 @@ export default function HabitsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        console.error('User not authenticated');
+        // Silent error handling for production
         setHabits([]);
         setIsLoading(false);
         return;
@@ -127,7 +127,7 @@ export default function HabitsPage() {
 
       setHabits(habitsWithStats);
     } catch (error) {
-      console.error('Error fetching habits:', error);
+      // Silent error handling for production
     } finally {
       setIsLoading(false);
     }
@@ -232,7 +232,7 @@ export default function HabitsPage() {
         duration: 3000,
       });
     } catch (error) {
-      console.error('Error updating habit status:', error);
+      // Silent error handling for production
       toast({
         title: "Update failed",
         description: "Failed to update habit status",

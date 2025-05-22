@@ -13,7 +13,7 @@ export default function ErrorPage({
 }) {
   useEffect(() => {
     // Log the error to an error reporting service
-    console.error('Unhandled error:', error);
+    // Silent error handling for production
   }, [error]);
 
   return (

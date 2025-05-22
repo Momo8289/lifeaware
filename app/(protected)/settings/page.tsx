@@ -63,7 +63,7 @@ export default function SettingsProfilePage() {
         .single()
         
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error)
+        // Silent error handling for production
       }
       
       setProfile(profileData || null)
@@ -132,7 +132,7 @@ export default function SettingsProfilePage() {
         description: "Your profile has been updated successfully.",
       })
     } catch (error: any) {
-      console.error('Error updating profile:', error)
+      // Silent error handling for production
       toast({
         title: "Error updating profile",
         description: error.message || "Something went wrong. Please try again.",
