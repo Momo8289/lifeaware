@@ -9,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuBadge,
 } from "@/components/ui/sidebar"
 
 export function NavSecondary({
@@ -20,6 +21,7 @@ export function NavSecondary({
     url: string
     icon: LucideIcon
     isActive?: boolean
+    badge?: string
   }[]
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   return (
@@ -38,6 +40,7 @@ export function NavSecondary({
                   <span>{item.title}</span>
                 </a>
               </SidebarMenuButton>
+              {item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
