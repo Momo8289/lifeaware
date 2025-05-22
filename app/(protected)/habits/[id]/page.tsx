@@ -130,12 +130,8 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
         
         // Store the habit name for breadcrumb
         if (habitData && habitData.name) {
-          // Update the localStorage or sessionStorage with id -> name mapping
-          const pathname = window.location.pathname;
-          const currentSegment = pathname.split('/').pop();
-          if (currentSegment === id) {
-            sessionStorage.setItem(`breadcrumb_${id}`, habitData.name);
-          }
+          // Always update the sessionStorage with the habit name for breadcrumb
+          sessionStorage.setItem(`breadcrumb_${id}`, habitData.name);
         }
 
         // Fetch habit logs
@@ -191,6 +187,13 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
 
     fetchHabitData();
   }, [id]);
+
+  // Effect to update the breadcrumb title whenever habit changes
+  useEffect(() => {
+    if (habit && habit.name) {
+      sessionStorage.setItem(`breadcrumb_${id}`, habit.name);
+    }
+  }, [habit, id]);
 
   const checkInHabit = async (status: 'completed') => {
     // Prevent multiple concurrent calls

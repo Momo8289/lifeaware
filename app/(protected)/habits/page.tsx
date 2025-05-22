@@ -50,7 +50,7 @@ export default function HabitsPage() {
   const [logs, setLogs] = useState<HabitLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('habits');
-  const [habitListTab, setHabitListTab] = useState('all');
+  const [habitListTab, setHabitListTab] = useState('active');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   const fetchHabits = async () => {
@@ -283,15 +283,15 @@ export default function HabitsPage() {
       </div>
 
       <Tabs defaultValue="habits" className="w-full" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 max-w-md">
-          <TabsTrigger value="habits">Habits</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
-          <TabsTrigger value="rewards">Rewards</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="habits" className="mt-6 space-y-4">
-          <div className="flex items-center">
-            <TabsList className="mr-auto">
+        <div className="flex justify-between items-center">
+          <TabsList className="grid grid-cols-3 max-w-md">
+            <TabsTrigger value="habits">Habits</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
+            <TabsTrigger value="rewards">Rewards</TabsTrigger>
+          </TabsList>
+          
+          {activeTab === 'habits' && (
+            <TabsList>
               <TabsTrigger 
                 value="all" 
                 onClick={() => setHabitListTab('all')}
@@ -314,8 +314,10 @@ export default function HabitsPage() {
                 Inactive
               </TabsTrigger>
             </TabsList>
-          </div>
-          
+          )}
+        </div>
+        
+        <TabsContent value="habits" className="mt-6 space-y-4">
           {isLoading ? (
             <div className="py-12 text-center text-muted-foreground">
               Loading your habits...
