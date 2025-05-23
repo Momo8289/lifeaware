@@ -238,8 +238,16 @@ export default function HabitsPage() {
         )
       );
       
+      // Trigger reminder count refresh in sidebar
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('refresh-reminders'));
+      }
+      
       // Refresh habits to get updated streak info
       fetchHabits();
+      
+      // Also trigger reminder provider to check for updates
+      checkReminders();
       
       toast({
         title: result.action === 'removed' ? "Status cleared" : "Habit updated",

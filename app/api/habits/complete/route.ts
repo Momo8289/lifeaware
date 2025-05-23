@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     let result;
     let isToggleOff = false;
-    let reminderAction = '';
+    let wasCompleted = false;
 
     if (existingLog) {
       // If clicking the same status, toggle it off (delete the log)
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
           .delete()
           .eq('id', existingLog.id);
         isToggleOff = true;
-        reminderAction = 'uncompleted';
+        wasCompleted = false;
       } else {
         // Update existing log with new status
         result = await supabase
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString() 
           })
           .eq('id', existingLog.id);
-        reminderAction = 'completed';
+        wasCompleted = true;
       }
     } else {
       // Insert new log
@@ -94,39 +94,55 @@ export async function POST(request: NextRequest) {
           completion_date: today,
           status
         });
-      reminderAction = 'completed';
+      wasCompleted = true;
     }
 
     if (result.error) {
       return NextResponse.json({ error: 'Failed to update habit status' }, { status: 500 });
     }
 
-    // Update related reminders asynchronously (don't wait for response)
-    if (reminderAction) {
-      try {
-        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/reminders/update`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': request.headers.get('cookie') || '', // Forward cookies for auth
-          },
-          body: JSON.stringify({
-            habit_id,
-            action: reminderAction,
-            timezone
-          }),
-        });
-      } catch (error) {
-        // Don't fail the habit completion if reminder update fails
-        console.error('Failed to update reminders:', error);
+    // Update related reminders based on habit completion
+    try {
+      if (wasCompleted) {
+        // Mark any active reminders for this habit as completed
+        await supabase
+          .from('reminders')
+          .update({ 
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('habit_id', habit_id)
+          .eq('status', 'active');
+      } else if (isToggleOff) {
+        // If habit was uncompleted, reactivate any completed reminders for today
+        const startOfDay = new Date(today);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(today);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        await supabase
+          .from('reminders')
+          .update({ 
+            status: 'active',
+            completed_at: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('habit_id', habit_id)
+          .eq('status', 'completed')
+          .gte('completed_at', startOfDay.toISOString())
+          .lte('completed_at', endOfDay.toISOString());
       }
+    } catch (error) {
+      // Don't fail the habit completion if reminder update fails
+      console.error('Failed to update reminders:', error);
     }
 
     return NextResponse.json({ 
       success: true, 
       action: isToggleOff ? 'removed' : 'completed',
       date: today,
-      reminder_updated: !!reminderAction
+      reminder_updated: true
     });
 
   } catch (error) {

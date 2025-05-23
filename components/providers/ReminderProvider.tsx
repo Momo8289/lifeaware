@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useUserTimezone } from '@/lib/hooks/useUserTimezone';
-import { checkAndUpdateReminders, markHabitCompleted } from '@/lib/utils/reminders';
+import { checkAndUpdateReminders, markHabitCompleted, dismissReminder as dismissReminderUtil } from '@/lib/utils/reminders';
 import { toast } from '@/components/ui/use-toast';
 import { Bell, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,16 @@ export function useReminders() {
 
 interface ReminderProviderProps {
   children: React.ReactNode;
+}
+
+/**
+ * Helper function to trigger reminder count refresh in sidebar
+ */
+function triggerReminderRefresh() {
+  // Trigger the custom event that the sidebar listens for
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('refresh-reminders'));
+  }
 }
 
 export function ReminderProvider({ children }: ReminderProviderProps) {
@@ -53,6 +63,11 @@ export function ReminderProvider({ children }: ReminderProviderProps) {
             showReminderToast(reminder);
           });
         }
+        
+        // If reminders have changed (some may have been filtered out), refresh sidebar count
+        if (result.reminders.length !== reminders.length) {
+          triggerReminderRefresh();
+        }
       }
     } catch (error) {
       console.error('Error checking reminders:', error);
@@ -66,13 +81,15 @@ export function ReminderProvider({ children }: ReminderProviderProps) {
       duration: 10000, // 10 seconds
       action: (
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            onClick={() => completeHabit(reminder.habit_id)}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <Check className="h-4 w-4" />
-          </Button>
+          {reminder.habit_id && (
+            <Button
+              size="sm"
+              onClick={() => completeHabit(reminder.habit_id)}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -85,17 +102,66 @@ export function ReminderProvider({ children }: ReminderProviderProps) {
     });
   };
 
-  const dismissReminder = (reminderId: string) => {
-    setReminders(prev => prev.filter(r => r.id !== reminderId));
+  const dismissReminder = async (reminderId: string) => {
+    try {
+      // Update in database
+      await dismissReminderUtil(reminderId);
+      
+      // Remove from local state
+      setReminders(prev => prev.filter(r => r.id !== reminderId));
+      
+      // Trigger sidebar refresh
+      triggerReminderRefresh();
+      
+      toast({
+        title: "Reminder dismissed",
+        description: "The reminder has been dismissed",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error dismissing reminder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to dismiss reminder",
+        variant: "destructive",
+      });
+    }
   };
 
   const completeHabit = async (habitId: string) => {
+    if (!habitId) return;
+    
     try {
-      // Mark as completed in database
+      // Mark as completed in database via existing API route
+      const response = await fetch('/api/habits/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          habit_id: habitId,
+          status: 'completed',
+          timezone
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to complete habit');
+      }
+
+      // Also mark related reminders as completed
       await markHabitCompleted(habitId, timezone);
       
       // Remove related reminders from UI
       setReminders(prev => prev.filter(r => r.habit_id !== habitId));
+      
+      // Trigger sidebar refresh to update reminder count
+      triggerReminderRefresh();
+      
+      // Also trigger a fresh reminder check to catch any newly completed habits
+      setTimeout(() => {
+        checkReminders();
+      }, 1000);
       
       toast({
         title: "Habit completed!",

@@ -446,6 +446,7 @@ export function HabitInsights({ habits, logs }: HabitInsightsProps) {
         
         <HabitCalendarHeatmap 
           logs={logs}
+          habits={habits}
           title="Progress Visualization"
           description="View your habit progress over time"
         />
