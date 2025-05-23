@@ -22,7 +22,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
-import { format, isToday, isYesterday, parseISO, subYears, addMonths } from 'date-fns';
+import { format, isToday, isYesterday, parseISO, subYears, addMonths, startOfToday } from 'date-fns';
 import * as React from 'react';
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -30,6 +30,8 @@ import { HabitProgressChart } from '@/components/habits/HabitProgressChart';
 import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
 import { Progress } from '@/components/ui/progress';
+import { useUserTimezone } from '@/lib/hooks/useUserTimezone';
+import { getTodayInTimezone, formatDateInTimezone } from '@/lib/utils/timezone';
 
 // Custom styles for the heatmap grid
 const styles = `
@@ -93,113 +95,104 @@ type TooltipDataAttrs = {
 
 export default function HabitDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const resolvedParams = React.use(params);
-  const id = resolvedParams.id;
-
   const [habit, setHabit] = useState<Habit | null>(null);
   const [logs, setLogs] = useState<HabitLog[]>([]);
   const [stats, setStats] = useState<HabitStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
-  const [markedDates, setMarkedDates] = useState<Record<string, 'completed'>>({});
+  const [id, setId] = useState<string>('');
+  const [markedDates, setMarkedDates] = useState<{ [key: string]: string }>({});
+  const { timezone, isLoading: timezoneLoading } = useUserTimezone();
 
   useEffect(() => {
-    const fetchHabitData = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Ensure user is authenticated
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          // Silent error handling for production
-          setHabit(null);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Fetch habit details
-        const { data: habitData, error: habitError } = await supabase
-          .from('habits')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (habitError) throw habitError;
-        setHabit(habitData);
-        
-        // Store the habit name for breadcrumb
-        if (habitData && habitData.name) {
-          // Always update the sessionStorage with the habit name for breadcrumb
-          sessionStorage.setItem(`breadcrumb_${id}`, habitData.name);
-        }
-
-        // Fetch habit logs
-        const { data: logsData, error: logsError } = await supabase
-          .from('habit_logs')
-          .select('*')
-          .eq('habit_id', id)
-          .order('completion_date', { ascending: false });
-
-        if (logsError) throw logsError;
-        setLogs(logsData || []);
-
-        // Create marked dates for calendar
-        const dates: Record<string, 'completed'> = {};
-        logsData?.forEach((log: HabitLog) => {
-          // Format dates consistently as YYYY-MM-DD
-          const dateStr = log.completion_date.split('T')[0];
-          dates[dateStr] = 'completed';
-        });
-        setMarkedDates(dates);
-        
-        // Fetch stats using new API route
-        let currentStreak = 0;
-        try {
-          const response = await fetch('/api/habits/streak', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ habit_uuid: id }),
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            currentStreak = result.streak || 0;
-          }
-        } catch (error) {
-          // Silent error handling, use default value of 0
-        }
-        
-        // Calculate other stats manually
-        const completed = logsData?.filter(log => log.status === 'completed').length || 0;
-        const totalDays = logsData?.length || 0;
-        const completionRate = totalDays > 0 ? (completed / totalDays) * 100 : 0;
-        
-        // For simplicity, we'll use current_streak as longest_streak for now
-        // In a real app, you would calculate this properly
-        setStats({
-          current_streak: currentStreak,
-          longest_streak: currentStreak, // This should be calculated properly
-          completion_rate: completionRate,
-          total_completions: completed,
-          total_days: totalDays
-        });
-      } catch (error) {
-        // Silent error handling for production
-        toast({
-          title: "Error",
-          description: "Failed to load habit data",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
+    const fetchParams = async () => {
+      const resolvedParams = await params;
+      setId(resolvedParams.id);
     };
+    fetchParams();
+  }, [params]);
 
-    fetchHabitData();
-  }, [id]);
+  useEffect(() => {
+    if (id && !timezoneLoading) {
+      fetchHabitData();
+    }
+  }, [id, timezone, timezoneLoading]);
+
+  const fetchHabitData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get current user to ensure we're authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        // Silent error handling for production
+        setHabit(null);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch habit data
+      const { data: habitData, error: habitError } = await supabase
+        .from('habits')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (habitError) throw habitError;
+      setHabit(habitData);
+
+      // Fetch logs
+      const { data: logsData, error: logsError } = await supabase
+        .from('habit_logs')
+        .select('*')
+        .eq('habit_id', id)
+        .order('completion_date', { ascending: false });
+
+      if (logsError) throw logsError;
+      setLogs(logsData || []);
+
+      // Create marked dates object for calendar view
+      const marked: { [key: string]: string } = {};
+      logsData?.forEach((log: HabitLog) => {
+        // Convert to user's timezone for display
+        const dateInTimezone = formatDateInTimezone(log.completion_date, timezone);
+        marked[dateInTimezone] = log.status;
+      });
+      setMarkedDates(marked);
+
+      // Fetch stats using timezone-aware API
+      try {
+        const response = await fetch(`/api/habits/stats?habit_id=${id}&timezone=${encodeURIComponent(timezone)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          const habitStats = result.habits.find((h: any) => h.habit_id === id);
+          if (habitStats) {
+            setStats({
+              current_streak: habitStats.current_streak,
+              longest_streak: habitStats.longest_streak,
+              completion_rate: habitStats.completion_rate,
+              total_completions: habitStats.total_completions,
+              total_days: habitStats.total_days
+            });
+          }
+        }
+      } catch (error) {
+        // Silent error handling
+      }
+
+    } catch (error: any) {
+      // Silent error handling for production
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Effect to update the breadcrumb title whenever habit changes
   useEffect(() => {
@@ -216,10 +209,13 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
     
     try {
       setIsCheckingIn(true);
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayInTimezone(timezone);
       
-      // Check if already logged for today
-      const existingLog = logs.find(log => log.completion_date.split('T')[0] === today);
+      // Check if already logged for today (using timezone-aware date)
+      const existingLog = logs.find(log => {
+        const logDateInTimezone = formatDateInTimezone(log.completion_date, timezone);
+        return logDateInTimezone === today;
+      });
       
       // Check if toggling the same status
       const isToggleOff = existingLog?.status === status;
@@ -352,7 +348,9 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   const todayLog = logs.find(log => {
-    return log.completion_date.split('T')[0] === new Date().toISOString().split('T')[0];
+    const today = getTodayInTimezone(timezone);
+    const logDateInTimezone = formatDateInTimezone(log.completion_date, timezone);
+    return logDateInTimezone === today;
   });
 
   const formatLogDate = (dateStr: string) => {
@@ -491,7 +489,7 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
                     
                     <div className="grid grid-cols-52 gap-1">
                       {Array.from({ length: 52 }).map((_, weekIndex) => {
-                        // For January to December display of current year
+                        // For January to December display of current year in user's timezone
                         const currentYear = new Date().getFullYear();
                         const startOfYear = new Date(currentYear, 0, 1);
                         
@@ -512,13 +510,15 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
                               // Calculate the date for this cell
                               const date = new Date(weekStart);
                               date.setDate(weekStart.getDate() + dayIndex);
-                              const dateStr = date.toISOString().split('T')[0];
+                              const dateStr = formatDateInTimezone(date.toISOString(), timezone);
                               
-                              // Check if this date has a log
-                              const hasLog = logs.some(log => log.completion_date.split('T')[0] === dateStr);
+                              // Check if this date has a log (using timezone-aware comparison)
+                              const hasLog = Object.keys(markedDates).includes(dateStr);
                               
-                              // Check if this date is in the future
-                              const isFuture = date > new Date();
+                              // Check if this date is in the future (in user's timezone)
+                              const today = new Date();
+                              const todayStr = formatDateInTimezone(today.toISOString(), timezone);
+                              const isFuture = dateStr > todayStr;
                               
                               return (
                                 <div

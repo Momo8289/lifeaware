@@ -13,6 +13,9 @@ import { toast } from '@/components/ui/use-toast';
 import { HabitCard } from '@/components/habits/HabitCard';
 import { HabitInsights } from '@/components/habits/HabitInsights';
 import { HabitGamification } from '@/components/habits/HabitGamification';
+import { createBrowserClient } from '@supabase/ssr';
+import { useUserTimezone } from '@/lib/hooks/useUserTimezone';
+import { getTodayInTimezone } from '@/lib/utils/timezone';
 
 // Types
 interface Habit {
@@ -50,10 +53,18 @@ export default function HabitsPage() {
   const [logs, setLogs] = useState<HabitLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('habits');
-  const [habitListTab, setHabitListTab] = useState('active');
+  const [habitListTab, setHabitListTab] = useState('all');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const { timezone, isLoading: timezoneLoading } = useUserTimezone();
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   const fetchHabits = async () => {
+    if (timezoneLoading) return; // Wait for timezone to load
+    
     try {
       setIsLoading(true);
       
@@ -90,8 +101,8 @@ export default function HabitsPage() {
       
       setLogs(allLogsData || []);
 
-      // Fetch today's logs to determine habit status
-      const today = new Date().toISOString().split('T')[0];
+      // Fetch today's logs to determine habit status (using user's timezone)
+      const today = getTodayInTimezone(timezone);
       const { data: todayLogsData, error: todayLogsError } = await supabase
         .from('habit_logs')
         .select('habit_id, status')
@@ -105,7 +116,7 @@ export default function HabitsPage() {
           const habitLogs = allLogsData?.filter((log: HabitLog) => log.habit_id === habit.id) || [];
           const todayLog = todayLogsData?.find((log: any) => log.habit_id === habit.id);
           
-          // Get streak info using new API route
+          // Get streak info using timezone-aware API route
           let streakData = 0;
           try {
             const response = await fetch('/api/habits/streak', {
@@ -113,7 +124,10 @@ export default function HabitsPage() {
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({ habit_uuid: habit.id }),
+              body: JSON.stringify({ 
+                habit_uuid: habit.id,
+                timezone 
+              }),
             });
             
             if (response.ok) {
@@ -150,7 +164,7 @@ export default function HabitsPage() {
 
   useEffect(() => {
     fetchHabits();
-  }, []);
+  }, [timezone, timezoneLoading]);
 
   const filteredHabits = habits.filter(habit => {
     if (habitListTab === 'all') return true;
@@ -174,7 +188,6 @@ export default function HabitsPage() {
   const updateHabitStatus = async (habitId: string, status: 'completed') => {
     try {
       setIsUpdating(habitId);
-      const today = new Date().toISOString().split('T')[0];
       
       // Get current habit from state
       const currentHabit = habits.find(h => h.id === habitId);
@@ -182,44 +195,24 @@ export default function HabitsPage() {
       // Check if we're toggling off the current status (same status clicked twice)
       const isToggleOff = currentHabit?.todayStatus === status;
       
-      // Check if a log already exists for today
-      const { data: existingLog, error: checkError } = await supabase
-        .from('habit_logs')
-        .select('id')
-        .eq('habit_id', habitId)
-        .eq('completion_date', today)
-        .single();
-      
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
-        throw checkError;
+      // Use timezone-aware completion API
+      const response = await fetch('/api/habits/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          habit_id: habitId,
+          status,
+          timezone
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update habit status');
       }
 
-      let result;
-      
-      if (existingLog && isToggleOff) {
-        // Delete the log if toggling off
-        result = await supabase
-          .from('habit_logs')
-          .delete()
-          .eq('id', existingLog.id);
-      } else if (existingLog) {
-        // Update existing log
-        result = await supabase
-          .from('habit_logs')
-          .update({ status, updated_at: new Date().toISOString() })
-          .eq('id', existingLog.id);
-      } else {
-        // Insert new log
-        result = await supabase
-          .from('habit_logs')
-          .insert({
-            habit_id: habitId,
-            completion_date: today,
-            status
-          });
-      }
-
-      if (result.error) throw result.error;
+      const result = await response.json();
       
       // Update local state
       setHabits(prevHabits => 
@@ -227,10 +220,10 @@ export default function HabitsPage() {
           habit.id === habitId 
             ? { 
                 ...habit, 
-                todayStatus: isToggleOff ? 'pending' : status,
+                todayStatus: result.action === 'removed' ? 'pending' : status,
                 // If completing, increment streak, otherwise reset it
-                current_streak: isToggleOff ? Math.max(0, habit.current_streak - 1) : habit.current_streak + 1,
-                completions: isToggleOff ? habit.completions - 1 : habit.completions + 1
+                current_streak: result.action === 'removed' ? Math.max(0, habit.current_streak - 1) : habit.current_streak + 1,
+                completions: result.action === 'removed' ? habit.completions - 1 : habit.completions + 1
               } 
             : habit
         )
@@ -240,8 +233,8 @@ export default function HabitsPage() {
       fetchHabits();
       
       toast({
-        title: isToggleOff ? "Status cleared" : "Habit updated",
-        description: isToggleOff 
+        title: result.action === 'removed' ? "Status cleared" : "Habit updated",
+        description: result.action === 'removed' 
           ? `Habit marked as pending` 
           : `Habit marked as ${status}`,
         duration: 3000,
