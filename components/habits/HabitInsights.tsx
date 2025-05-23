@@ -29,6 +29,7 @@ interface Habit {
   total_days: number
   created_at: string
   updated_at: string
+  is_active: boolean
 }
 
 interface HabitInsightsProps {
@@ -37,9 +38,16 @@ interface HabitInsightsProps {
 }
 
 export function HabitInsights({ habits, logs }: HabitInsightsProps) {
+  // Filter to only include active habits for insights
+  const activeHabits = habits.filter(habit => habit.is_active)
+  
+  // Filter logs to only include logs from active habits
+  const activeHabitIds = new Set(activeHabits.map(habit => habit.id))
+  const activeLogs = logs.filter(log => activeHabitIds.has(log.habit_id))
+  
   // Calculate most consistent habit (highest completion rate)
-  const habitsWithStats = habits.map(habit => {
-    const habitLogs = logs.filter(log => log.habit_id === habit.id)
+  const habitsWithStats = activeHabits.map(habit => {
+    const habitLogs = activeLogs.filter(log => log.habit_id === habit.id)
     const completionRate = habit.total_days > 0 
       ? (habit.completions / habit.total_days) * 100 
       : habit.completions > 0 ? 100 : 0 // If habit was just created today and completed, give it 100%
@@ -115,7 +123,7 @@ export function HabitInsights({ habits, logs }: HabitInsightsProps) {
   // Get completion by category
   const categoryCompletions: Record<string, { total: number, completed: number }> = {}
   
-  habits.forEach(habit => {
+  activeHabits.forEach(habit => {
     const category = habit.category || 'Uncategorized'
     if (!categoryCompletions[category]) {
       categoryCompletions[category] = { total: 0, completed: 0 }
@@ -138,7 +146,7 @@ export function HabitInsights({ habits, logs }: HabitInsightsProps) {
       suggestions.push(`Try to improve your consistency with "${leastConsistentHabit.name}" to build a streak.`)
     }
     
-    if (habits.filter(h => h.current_streak > 0).length === 0 && habits.length > 0) {
+    if (activeHabits.filter(h => h.current_streak > 0).length === 0 && activeHabits.length > 0) {
       suggestions.push("You don't have any active streaks. Try completing a habit today to start building momentum!")
     }
     
@@ -147,7 +155,7 @@ export function HabitInsights({ habits, logs }: HabitInsightsProps) {
     }
     
     // Add a general suggestion if we don't have specific ones
-    if (suggestions.length === 0 && habits.length > 0) {
+    if (suggestions.length === 0 && activeHabits.length > 0) {
       suggestions.push("Focus on completing one habit consistently before adding more to your routine.")
     }
     
@@ -156,21 +164,21 @@ export function HabitInsights({ habits, logs }: HabitInsightsProps) {
   
   const suggestions = generateSuggestions()
   
-  // Calculate total completions across all habits
-  const totalCompletions = logs.filter(log => log.status === 'completed').length
+  // Calculate total completions across all active habits
+  const totalCompletions = activeLogs.filter(log => log.status === 'completed').length
   
   // Calculate if any habit had a perfect week (all required days completed in the last 7 days)
   const today = new Date()
   const lastWeekStart = new Date(today)
   lastWeekStart.setDate(today.getDate() - 7)
   
-  const habitsWithPerfectWeek = habits.filter(habit => {
+  const habitsWithPerfectWeek = activeHabits.filter(habit => {
     // Only consider habits that have been tracked for at least 7 days
     if (habit.total_days < 7) return false
     
     // For daily habits, we expect 7 completions in the last week
     if (habit.frequency === 'daily') {
-      const completionsLastWeek = logs.filter(log => 
+      const completionsLastWeek = activeLogs.filter(log => 
         log.habit_id === habit.id && 
         log.status === 'completed' &&
         new Date(log.completion_date) >= lastWeekStart
@@ -184,7 +192,7 @@ export function HabitInsights({ habits, logs }: HabitInsightsProps) {
       const requiredDaysCount = habit.frequency_days.length
       if (requiredDaysCount === 0) return false
       
-      const completionsLastWeek = logs.filter(log => 
+      const completionsLastWeek = activeLogs.filter(log => 
         log.habit_id === habit.id && 
         log.status === 'completed' &&
         new Date(log.completion_date) >= lastWeekStart
@@ -207,7 +215,7 @@ export function HabitInsights({ habits, logs }: HabitInsightsProps) {
   const completionMilestone = getMilestoneLevel(totalCompletions)
   
   // Determine longest active habit (tracked for the most days)
-  const sortedByAge = [...habits].sort((a, b) => b.total_days - a.total_days)
+  const sortedByAge = [...activeHabits].sort((a, b) => b.total_days - a.total_days)
   const longestActiveHabit = sortedByAge.length > 0 ? sortedByAge[0] : null
   
   return (
@@ -395,7 +403,7 @@ export function HabitInsights({ habits, logs }: HabitInsightsProps) {
           </CardHeader>
           <CardContent className="pt-2">
             <div className="space-y-6">
-              {habits.filter(h => h.completions > 0).map(habit => (
+              {activeHabits.filter(h => h.completions > 0).map(habit => (
                 <div key={habit.id} className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium">{habit.name}</h4>
@@ -404,7 +412,7 @@ export function HabitInsights({ habits, logs }: HabitInsightsProps) {
                   <div className="flex justify-between">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
                       // Calculate how many completions happened on this day of week
-                      const dayCompletions = logs.filter(log => 
+                      const dayCompletions = activeLogs.filter(log => 
                         log.habit_id === habit.id && 
                         log.status === 'completed' &&
                         new Date(log.completion_date).getDay() === index
@@ -435,7 +443,7 @@ export function HabitInsights({ habits, logs }: HabitInsightsProps) {
                 </div>
               ))}
               
-              {habits.filter(h => h.completions > 0).length === 0 && (
+              {activeHabits.filter(h => h.completions > 0).length === 0 && (
                 <p className="text-center py-8 text-muted-foreground">
                   Complete habits to see your patterns
                 </p>
@@ -445,8 +453,8 @@ export function HabitInsights({ habits, logs }: HabitInsightsProps) {
         </Card>
         
         <HabitCalendarHeatmap 
-          logs={logs}
-          habits={habits}
+          logs={activeLogs}
+          habits={activeHabits}
           title="Progress Visualization"
           description="View your habit progress over time"
         />

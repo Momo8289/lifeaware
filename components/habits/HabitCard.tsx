@@ -44,6 +44,7 @@ interface HabitCardProps {
     time_of_day: string | null
     current_streak: number
     todayStatus?: 'completed' | 'pending'
+    is_active: boolean
   }
   onUpdateStatus: (habitId: string, status: 'completed') => Promise<void>
   isUpdating: boolean
@@ -479,7 +480,8 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
             size="sm"
             className={habit.todayStatus === 'completed' ? 'border-success text-success hover:bg-success/10' : ''}
             onClick={() => onUpdateStatus(habit.id, 'completed')}
-            disabled={isUpdating}
+            disabled={isUpdating || !habit.is_active}
+            title={!habit.is_active ? 'This habit is inactive and cannot be completed' : undefined}
           >
             {habit.todayStatus === 'completed' ? (
               <>

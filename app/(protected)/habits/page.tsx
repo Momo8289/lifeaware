@@ -54,7 +54,7 @@ export default function HabitsPage() {
   const [logs, setLogs] = useState<HabitLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('habits');
-  const [habitListTab, setHabitListTab] = useState('all');
+  const [habitListTab, setHabitListTab] = useState('active');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const { timezone, isLoading: timezoneLoading } = useUserTimezone();
   const { reminders, checkReminders } = useReminders();
@@ -194,6 +194,17 @@ export default function HabitsPage() {
       // Get current habit from state
       const currentHabit = habits.find(h => h.id === habitId);
       
+      // Prevent updating inactive habits
+      if (currentHabit && !currentHabit.is_active) {
+        toast({
+          title: "Cannot update inactive habit",
+          description: "This habit is inactive and cannot be completed.",
+          variant: "destructive",
+          duration: 3000,
+        });
+        return;
+      }
+      
       // Check if we're toggling off the current status (same status clicked twice)
       const isToggleOff = currentHabit?.todayStatus === status;
       
@@ -306,29 +317,16 @@ export default function HabitsPage() {
           </TabsList>
           
           {activeTab === 'habits' && (
-            <TabsList>
-              <TabsTrigger 
-                value="all" 
-                onClick={() => setHabitListTab('all')}
-                data-state={habitListTab === 'all' ? 'active' : ''}
-              >
-                All
-              </TabsTrigger>
-              <TabsTrigger 
-                value="active" 
-                onClick={() => setHabitListTab('active')}
-                data-state={habitListTab === 'active' ? 'active' : ''}
-              >
-                Active
-              </TabsTrigger>
-              <TabsTrigger 
-                value="inactive" 
-                onClick={() => setHabitListTab('inactive')}
-                data-state={habitListTab === 'inactive' ? 'active' : ''}
-              >
-                Inactive
-              </TabsTrigger>
-            </TabsList>
+            <Tabs value={habitListTab} onValueChange={setHabitListTab}>
+              <TabsList>
+                <TabsTrigger value="active">
+                  Active
+                </TabsTrigger>
+                <TabsTrigger value="inactive">
+                  Inactive
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           )}
         </div>
         
@@ -355,17 +353,23 @@ export default function HabitsPage() {
                   <CheckCircle2 className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium">No habits found</h3>
-                  <p className="text-muted-foreground mt-1">
-                    You haven't created any habits yet. Add your first habit to get started.
-                  </p>
+                  <h3 className="text-lg font-medium">
+                    {habitListTab === 'inactive' ? 'No inactive habits' : 'No habits found'}
+                  </h3>
+                  {habitListTab !== 'inactive' && (
+                    <p className="text-muted-foreground mt-1">
+                      You haven't created any habits yet. Add your first habit to get started.
+                    </p>
+                  )}
                 </div>
-                <Button asChild className="mt-2">
-                  <Link href="/habits/new">
-                    <PlusIcon className="h-4 w-4 mr-2" />
-                    Create First Habit
-                  </Link>
-                </Button>
+                {habitListTab !== 'inactive' && (
+                  <Button asChild className="mt-2">
+                    <Link href="/habits/new">
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      Create First Habit
+                    </Link>
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}

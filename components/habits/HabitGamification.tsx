@@ -22,6 +22,7 @@ interface Habit {
   completions: number
   total_days?: number
   category?: string | null
+  is_active: boolean
 }
 
 interface HabitGamificationProps {
@@ -30,20 +31,27 @@ interface HabitGamificationProps {
 }
 
 export function HabitGamification({ habits, logs }: HabitGamificationProps) {
+  // Filter to only include active habits for gamification
+  const activeHabits = habits.filter(habit => habit.is_active)
+  
+  // Filter logs to only include logs from active habits
+  const activeHabitIds = new Set(activeHabits.map(habit => habit.id))
+  const activeLogs = logs.filter(log => activeHabitIds.has(log.habit_id))
+  
   // Calculate points based on completions
-  const completionPoints = logs.length * 10
+  const completionPoints = activeLogs.length * 10
   
   // Calculate streak points (extra points for maintaining streaks)
-  const streakPoints = habits.reduce((total, habit) => {
+  const streakPoints = activeHabits.reduce((total, habit) => {
     return total + (habit.current_streak * 5)
   }, 0)
   
   // Calculate category diversity bonus (extra points for having habits in different categories)
-  const uniqueCategories = new Set(habits.map(h => h.category || 'Uncategorized')).size
+  const uniqueCategories = new Set(activeHabits.map(h => h.category || 'Uncategorized')).size
   const categoryDiversityPoints = uniqueCategories * 15
   
   // Calculate consistency bonus (extra points for habits with high completion rates)
-  const consistencyBonus = habits.reduce((total, habit) => {
+  const consistencyBonus = activeHabits.reduce((total, habit) => {
     const completionRate = habit.total_days && habit.total_days > 0 
       ? (habit.completions / habit.total_days) * 100 
       : 0
@@ -78,7 +86,7 @@ export function HabitGamification({ habits, logs }: HabitGamificationProps) {
   }
   
   // Find the longest streak
-  const longestStreak = habits.reduce((max, habit) => 
+  const longestStreak = activeHabits.reduce((max, habit) => 
     Math.max(max, habit.current_streak), 0)
   
   // Check for a perfect week (at least one completion every day for the past 7 days)
@@ -89,12 +97,12 @@ export function HabitGamification({ habits, logs }: HabitGamificationProps) {
   })
   
   const perfectWeek = lastWeekDates.every(date => 
-    logs.some(log => log.completion_date.split('T')[0] === date)
+    activeLogs.some(log => log.completion_date.split('T')[0] === date)
   )
   
   // Get counts for different milestones
-  const habitsWithLongStreaks = habits.filter(h => h.current_streak >= 7).length
-  const totalCompletionsThisMonth = logs.filter(log => {
+  const habitsWithLongStreaks = activeHabits.filter(h => h.current_streak >= 7).length
+  const totalCompletionsThisMonth = activeLogs.filter(log => {
     const logDate = new Date(log.completion_date)
     const now = new Date()
     return logDate.getMonth() === now.getMonth() && logDate.getFullYear() === now.getFullYear()
@@ -106,16 +114,16 @@ export function HabitGamification({ habits, logs }: HabitGamificationProps) {
       name: "First Log",
       description: "Logged your first habit",
       icon: <Clock className="h-4 w-4" />,
-      earned: logs.length >= badgeThresholds.firstLog,
-      progress: Math.min(logs.length / badgeThresholds.firstLog, 1) * 100,
+      earned: activeLogs.length >= badgeThresholds.firstLog,
+      progress: Math.min(activeLogs.length / badgeThresholds.firstLog, 1) * 100,
       color: "primary"
     },
     {
       name: "Habit Collector",
       description: "Created 3 habits",
       icon: <Star className="h-4 w-4" />,
-      earned: habits.length >= badgeThresholds.threeHabits,
-      progress: Math.min(habits.length / badgeThresholds.threeHabits, 1) * 100,
+      earned: activeHabits.length >= badgeThresholds.threeHabits,
+      progress: Math.min(activeHabits.length / badgeThresholds.threeHabits, 1) * 100,
       color: "warning"
     },
     {
@@ -138,16 +146,16 @@ export function HabitGamification({ habits, logs }: HabitGamificationProps) {
       name: "10 Log Milestone",
       description: "Completed 10 habit logs",
       icon: <Calendar className="h-4 w-4" />,
-      earned: logs.length >= badgeThresholds.tenLogs,
-      progress: Math.min(logs.length / badgeThresholds.tenLogs, 1) * 100,
+      earned: activeLogs.length >= badgeThresholds.tenLogs,
+      progress: Math.min(activeLogs.length / badgeThresholds.tenLogs, 1) * 100,
       color: "violet"
     },
     {
       name: "Habit Master",
       description: "Created 5 habits",
       icon: <Medal className="h-4 w-4" />,
-      earned: habits.length >= badgeThresholds.fiveHabits,
-      progress: Math.min(habits.length / badgeThresholds.fiveHabits, 1) * 100,
+      earned: activeHabits.length >= badgeThresholds.fiveHabits,
+      progress: Math.min(activeHabits.length / badgeThresholds.fiveHabits, 1) * 100,
       color: "yellow"
     },
     {
@@ -162,8 +170,8 @@ export function HabitGamification({ habits, logs }: HabitGamificationProps) {
       name: "50 Log Champion",
       description: "Completed 50 habit logs",
       icon: <Award className="h-4 w-4" />,
-      earned: logs.length >= badgeThresholds.fiftyLogs,
-      progress: Math.min(logs.length / badgeThresholds.fiftyLogs, 1) * 100,
+      earned: activeLogs.length >= badgeThresholds.fiftyLogs,
+      progress: Math.min(activeLogs.length / badgeThresholds.fiftyLogs, 1) * 100,
       color: "blue"
     },
     {
@@ -172,7 +180,7 @@ export function HabitGamification({ habits, logs }: HabitGamificationProps) {
       icon: <CheckCircle2 className="h-4 w-4" />,
       earned: perfectWeek,
       progress: perfectWeek ? 100 : lastWeekDates.filter(date => 
-        logs.some(log => log.completion_date.split('T')[0] === date)
+        activeLogs.some(log => log.completion_date.split('T')[0] === date)
       ).length / 7 * 100,
       color: "emerald"
     },
@@ -196,8 +204,8 @@ export function HabitGamification({ habits, logs }: HabitGamificationProps) {
       name: "Centurion",
       description: "Complete 100 habit logs",
       icon: <Crown className="h-4 w-4" />,
-      earned: logs.length >= badgeThresholds.hundredLogs,
-      progress: Math.min(logs.length / badgeThresholds.hundredLogs, 1) * 100,
+      earned: activeLogs.length >= badgeThresholds.hundredLogs,
+      progress: Math.min(activeLogs.length / badgeThresholds.hundredLogs, 1) * 100,
       color: "purple"
     }
   ]
