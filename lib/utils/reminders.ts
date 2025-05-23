@@ -72,7 +72,7 @@ export async function checkAndUpdateReminders(userTimezone: string) {
           .eq('habit_id', reminder.habit_id)
           .eq('completion_date', today)
           .eq('status', 'completed')
-          .single();
+          .maybeSingle();
 
         // If habit is already completed today, don't show reminder
         if (todayLog) {
@@ -168,5 +168,42 @@ export async function dismissReminder(reminderId: string) {
   } catch (error) {
     console.error('Error dismissing reminder:', error);
     return { success: false, error: (error as Error).message };
+  }
+}
+
+/**
+ * Get all active reminders for the user (for displaying on habit cards)
+ */
+export async function getAllActiveReminders() {
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    // Get all active reminders (including future ones)
+    const { data: reminders, error } = await supabase
+      .from('reminders')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active');
+
+    if (error) {
+      console.error('Error fetching all active reminders:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { 
+      success: true, 
+      reminders: reminders || []
+    };
+
+  } catch (error) {
+    console.error('Error fetching all active reminders:', error);
+    return { success: false, error: 'Failed to fetch active reminders' };
   }
 } 

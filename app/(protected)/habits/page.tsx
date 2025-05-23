@@ -168,13 +168,6 @@ export default function HabitsPage() {
     fetchHabits();
   }, [timezone, timezoneLoading]);
 
-  // Example: Refresh reminders when habits are loaded
-  useEffect(() => {
-    if (timezone) {
-      checkReminders();
-    }
-  }, [timezone, checkReminders]);
-
   const filteredHabits = habits.filter(habit => {
     if (habitListTab === 'all') return true;
     if (habitListTab === 'active') return habit.is_active;
@@ -245,9 +238,6 @@ export default function HabitsPage() {
       
       // Refresh habits to get updated streak info
       fetchHabits();
-      
-      // Also trigger reminder provider to check for updates
-      checkReminders();
       
       toast({
         title: result.action === 'removed' ? "Status cleared" : "Habit updated",

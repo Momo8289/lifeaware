@@ -11,6 +11,7 @@ import { format, isToday, addDays, isBefore, setHours, setMinutes, parse } from 
 import { toast } from "@/components/ui/use-toast"
 import { supabase } from "@/lib/supabase/client"
 import { useState, useEffect } from "react"
+import { useReminders } from "@/components/providers/ReminderProvider"
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,9 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
   const [reminderPriority, setReminderPriority] = useState("Medium");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
+  
+  // Get reminders from the provider to make the card reactive
+  const { allActiveReminders } = useReminders();
   
   // Date picker helper functions
   const isSelectedDate = (date: Date | null): boolean => {
@@ -128,35 +132,21 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
     }
   }, [reminderDate]);
 
-  // Check if there's already a reminder for this habit
+  // Check if there's already a reminder for this habit from the provider
   useEffect(() => {
-    const checkExistingReminder = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('reminders')
-          .select('id, due_date, status')
-          .eq('habit_id', habit.id)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (error) throw error;
-
-        if (data) {
-          setHasReminder(true);
-          setReminderId(data.id);
-          setReminderDueDate(data.due_date);
-        } else {
-          setHasReminder(false);
-          setReminderId(null);
-          setReminderDueDate(null);
-        }
-      } catch (error) {
-        // Silent error handling for production
-      }
-    };
-
-    checkExistingReminder();
-  }, [habit.id]);
+    // Find any active reminders for this habit from the provider
+    const habitReminder = allActiveReminders.find(r => r.habit_id === habit.id);
+    
+    if (habitReminder) {
+      setHasReminder(true);
+      setReminderId(habitReminder.id);
+      setReminderDueDate(habitReminder.due_date);
+    } else {
+      setHasReminder(false);
+      setReminderId(null);
+      setReminderDueDate(null);
+    }
+  }, [habit.id, allActiveReminders]);
 
   const frequencyText = () => {
     switch (habit.frequency) {
