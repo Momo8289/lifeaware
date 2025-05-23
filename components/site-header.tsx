@@ -6,11 +6,13 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { Breadcrumb } from "@/components/ui/breadcrumb"
 import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase/client"
 
 export function SiteHeader() {
   const pathname = usePathname()
   const [breadcrumbs, setBreadcrumbs] = useState<{ title: string; href: string }[]>([])
   const [isClient, setIsClient] = useState(false)
+  const [loadedTitles, setLoadedTitles] = useState<Record<string, string>>({})
   
   // Generate breadcrumb segments based on the current path
   const generateBreadcrumbs = (useClientStorage = false) => {
@@ -56,8 +58,12 @@ export function SiteHeader() {
       // Format the segment title to be more readable
       let title = segment.charAt(0).toUpperCase() + segment.slice(1);
       
-      // If we're on the client and this is a UUID, check sessionStorage for a custom name
-      if (useClientStorage && isUUID) {
+      // First check if we've already loaded this title from the server
+      if (isUUID && loadedTitles[segment]) {
+        title = loadedTitles[segment];
+      }
+      // Then check sessionStorage if allowed
+      else if (useClientStorage && isUUID) {
         const storedName = sessionStorage.getItem(`breadcrumb_${segment}`);
         if (storedName) {
           title = storedName;
@@ -69,6 +75,68 @@ export function SiteHeader() {
     
     return breadcrumbs
   }
+  
+  // Fetch entity names for any UUIDs in the path
+  useEffect(() => {
+    const fetchEntityNames = async () => {
+      const pathSegments = pathname.split('/').filter(segment => 
+        segment && segment !== '(protected)'
+      );
+      
+      const uuidSegments = pathSegments.filter(segment => 
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)
+      );
+      
+      if (uuidSegments.length === 0) return;
+      
+      // Check which segments we need to load
+      const segmentsToLoad = uuidSegments.filter(id => !loadedTitles[id]);
+      if (segmentsToLoad.length === 0) return;
+      
+      try {
+        const newTitles: Record<string, string> = {...loadedTitles};
+        let updated = false;
+        
+        // Check for habit IDs
+        if (pathname.includes('/habits/')) {
+          for (const id of segmentsToLoad) {
+            // Check if this ID appears after '/habits/' in the path
+            if (pathname.includes(`/habits/${id}`)) {
+              const { data } = await supabase
+                .from('habits')
+                .select('name')
+                .eq('id', id)
+                .single();
+                
+              if (data?.name) {
+                newTitles[id] = data.name;
+                // Also update sessionStorage for future use
+                sessionStorage.setItem(`breadcrumb_${id}`, data.name);
+                updated = true;
+              }
+            }
+          }
+        }
+        
+        // Add checks for other entity types (goals, metrics, etc.) here
+        
+        if (updated) {
+          setLoadedTitles(newTitles);
+        }
+      } catch (error) {
+        // Silent error handling for production
+      }
+    };
+    
+    fetchEntityNames();
+  }, [pathname]);
+  
+  // Update breadcrumbs whenever loadedTitles changes
+  useEffect(() => {
+    if (isClient) {
+      setBreadcrumbs(generateBreadcrumbs(true));
+    }
+  }, [loadedTitles, isClient, pathname]);
   
   // Initialize breadcrumbs with server-safe values
   useEffect(() => {
