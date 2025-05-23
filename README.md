@@ -110,7 +110,7 @@ You can also create and manage your Supabase project using the Supabase CLI:
 
 2. Link your local project to the Supabase project:
    ```bash
-   supabase link --project-ref [project-ref]
+   supabase link --project-ref
    ```
 
 3. Push your database schema:
@@ -169,10 +169,7 @@ Allows users to permanently delete their accounts and all associated data (profi
 Deploy this function to your Supabase project using the CLI:
 
 ```bash
-# Deploy the function
-npx supabase functions deploy user-self-deletion
-
-# Or deploy all functions at once
+# Deploy all functions at once
 npx supabase functions deploy
 ```
 

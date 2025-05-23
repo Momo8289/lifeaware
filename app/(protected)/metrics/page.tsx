@@ -94,9 +94,24 @@ export default function MetricsPage() {
           .limit(1)
           .single();
         
-        // Get trend 
-        const { data: trendData } = await supabase
-          .rpc('get_metric_trend', { metric_template_id: metric.id });
+        // Get trend using new API route
+        let trendData = 'unknown';
+        try {
+          const response = await fetch('/api/metrics/trend', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ metric_template_id: metric.id }),
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            trendData = result.trend || 'unknown';
+          }
+        } catch (error) {
+          // Silent error handling, use default value of 'unknown'
+        }
         
         // Get count of logs
         const { count } = await supabase
@@ -107,7 +122,7 @@ export default function MetricsPage() {
         metricsWithStats.push({
           ...metric,
           latest_log: latestLog || undefined,
-          trend: trendData || 'unknown',
+          trend: trendData,
           logs_count: count || 0
         });
       }

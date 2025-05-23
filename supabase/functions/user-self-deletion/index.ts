@@ -1,9 +1,10 @@
-// @ts-nocheck
 import { serve } from 'https://deno.land/std@0.182.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.14.0'
-import { corsHeaders } from '../_shared/cors.ts'
 
-// Removed console.log
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 serve(async (req: Request) => {
   // Handle CORS preflight request
@@ -28,7 +29,6 @@ serve(async (req: Request) => {
     const token = authHeader.replace('Bearer ', '')
     
     // Manually decode the JWT to get the user ID
-    // This avoids the Auth session missing error
     let userId;
     try {
       // Basic JWT decoding to extract the payload
@@ -44,10 +44,7 @@ serve(async (req: Request) => {
       if (!userId) {
         throw new Error('Invalid token: User ID not found in JWT payload');
       }
-      
-      // Removed console.log
     } catch (jwtError) {
-      // Silent error handling for production
       throw new Error('Invalid authentication token');
     }
     
@@ -55,11 +52,8 @@ serve(async (req: Request) => {
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
     
     if (userError || !userData.user) {
-      // Silent error handling for production
       throw new Error('User not found or authentication failed');
     }
-    
-    // Removed console.log
     
     // Get user profile to retrieve avatar info
     const { data: profile, error: profileFetchError } = await supabaseAdmin
@@ -69,16 +63,13 @@ serve(async (req: Request) => {
       .single();
     
     if (profileFetchError && profileFetchError.code !== 'PGRST116') {
-      // Silent error handling for production
       // Continue with user deletion even if profile fetch fails
+      console.warn('Failed to fetch profile for deletion:', profileFetchError);
     }
     
     // Delete avatar if it exists
     if (profile && profile.avatar_url) {
       try {
-        // Removed console.log
-        
-        // Check if avatar_url is a simple filename or full path
         let avatarFilename = profile.avatar_url;
         
         // If it's a full URL, extract just the filename
@@ -87,45 +78,39 @@ serve(async (req: Request) => {
         }
         
         if (avatarFilename) {
-          const { data: avatarDeletion, error: avatarError } = await supabaseAdmin
+          const { error: avatarError } = await supabaseAdmin
             .storage
             .from('avatars')
             .remove([avatarFilename]);
           
           if (avatarError) {
-            // Silent error handling for production
+            console.warn('Failed to delete avatar:', avatarError);
             // Continue with user deletion even if avatar deletion fails
-          } else {
-            // Removed console.log
           }
         }
       } catch (avatarError) {
-        // Silent error handling for production
+        console.warn('Error during avatar deletion:', avatarError);
         // Continue with user deletion even if avatar deletion fails
       }
     }
     
     // Delete profile data
-    // Removed console.log
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
       .eq('id', userId);
     
     if (profileError) {
-      // Silent error handling for production
+      console.warn('Failed to delete profile:', profileError);
       // Continue with user deletion even if profile deletion fails
     }
     
     // Delete the user from auth.users
-    // Removed console.log
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
     
     if (deleteError) {
       throw new Error(`Failed to delete user: ${deleteError.message}`);
     }
-    
-    // Removed console.log
     
     return new Response(
       JSON.stringify({
@@ -138,7 +123,7 @@ serve(async (req: Request) => {
       }
     );
   } catch (error) {
-    // Silent error handling for production
+    console.error('Error during user deletion:', error);
     
     return new Response(
       JSON.stringify({

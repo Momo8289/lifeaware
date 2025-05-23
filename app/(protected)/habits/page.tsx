@@ -105,10 +105,25 @@ export default function HabitsPage() {
           const habitLogs = allLogsData?.filter((log: HabitLog) => log.habit_id === habit.id) || [];
           const todayLog = todayLogsData?.find((log: any) => log.habit_id === habit.id);
           
-          // Get streak info
-          const { data: streakData } = await supabase
-            .rpc('get_habit_streak', { habit_uuid: habit.id });
+          // Get streak info using new API route
+          let streakData = 0;
+          try {
+            const response = await fetch('/api/habits/streak', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ habit_uuid: habit.id }),
+            });
             
+            if (response.ok) {
+              const result = await response.json();
+              streakData = result.streak || 0;
+            }
+          } catch (error) {
+            // Silent error handling, use default value of 0
+          }
+          
           // Calculate total days since habit creation
           const startDate = new Date(habit.start_date);
           const now = new Date();
@@ -117,7 +132,7 @@ export default function HabitsPage() {
           
           return {
             ...habit,
-            current_streak: streakData || 0,
+            current_streak: streakData,
             completions: habitLogs.length,
             total_days: diffDays,
             todayStatus: todayLog ? todayLog.status as 'completed' | 'pending' : 'pending'

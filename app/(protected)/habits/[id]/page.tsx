@@ -153,11 +153,24 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
         });
         setMarkedDates(dates);
         
-        // Fetch stats
-        const { data: statsData } = await supabase
-          .rpc('get_habit_streak', { habit_uuid: id });
+        // Fetch stats using new API route
+        let currentStreak = 0;
+        try {
+          const response = await fetch('/api/habits/streak', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ habit_uuid: id }),
+          });
           
-        const currentStreak = statsData || 0;
+          if (response.ok) {
+            const result = await response.json();
+            currentStreak = result.streak || 0;
+          }
+        } catch (error) {
+          // Silent error handling, use default value of 0
+        }
         
         // Calculate other stats manually
         const completed = logsData?.filter(log => log.status === 'completed').length || 0;

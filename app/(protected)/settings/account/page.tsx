@@ -230,7 +230,7 @@ export default function AccountPage() {
         throw new Error('You must be logged in to delete your account')
       }
       
-      // Call the edge function directly with explicit parameters
+      // Call the edge function with explicit parameters
       const { data, error } = await supabase.functions.invoke(
         'user-self-deletion',
         {
