@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/components/AuthProvider";
 import CookieConsent from "@/components/CookieConsent";
 import { Toaster } from "@/components/ui/toaster";
+import { ReminderProvider } from "@/components/providers/ReminderProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,9 +33,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
-            <CookieConsent />
-            <Toaster />
+            <ReminderProvider>
+              {children}
+              <CookieConsent />
+              <Toaster />
+            </ReminderProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

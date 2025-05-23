@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     // Verify habit belongs to user
     const { data: habit, error: habitError } = await supabase
       .from('habits')
-      .select('id, user_id')
+      .select('id, user_id, frequency')
       .eq('id', habit_id)
       .eq('user_id', user.id)
       .single();
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
 
     let result;
     let isToggleOff = false;
+    let reminderAction = '';
 
     if (existingLog) {
       // If clicking the same status, toggle it off (delete the log)
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
           .delete()
           .eq('id', existingLog.id);
         isToggleOff = true;
+        reminderAction = 'uncompleted';
       } else {
         // Update existing log with new status
         result = await supabase
@@ -81,6 +83,7 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString() 
           })
           .eq('id', existingLog.id);
+        reminderAction = 'completed';
       }
     } else {
       // Insert new log
@@ -91,16 +94,39 @@ export async function POST(request: NextRequest) {
           completion_date: today,
           status
         });
+      reminderAction = 'completed';
     }
 
     if (result.error) {
       return NextResponse.json({ error: 'Failed to update habit status' }, { status: 500 });
     }
 
+    // Update related reminders asynchronously (don't wait for response)
+    if (reminderAction) {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/reminders/update`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': request.headers.get('cookie') || '', // Forward cookies for auth
+          },
+          body: JSON.stringify({
+            habit_id,
+            action: reminderAction,
+            timezone
+          }),
+        });
+      } catch (error) {
+        // Don't fail the habit completion if reminder update fails
+        console.error('Failed to update reminders:', error);
+      }
+    }
+
     return NextResponse.json({ 
       success: true, 
       action: isToggleOff ? 'removed' : 'completed',
-      date: today 
+      date: today,
+      reminder_updated: !!reminderAction
     });
 
   } catch (error) {

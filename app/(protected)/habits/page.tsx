@@ -16,6 +16,7 @@ import { HabitGamification } from '@/components/habits/HabitGamification';
 import { createBrowserClient } from '@supabase/ssr';
 import { useUserTimezone } from '@/lib/hooks/useUserTimezone';
 import { getTodayInTimezone } from '@/lib/utils/timezone';
+import { useReminders } from '@/components/providers/ReminderProvider';
 
 // Types
 interface Habit {
@@ -56,6 +57,7 @@ export default function HabitsPage() {
   const [habitListTab, setHabitListTab] = useState('all');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const { timezone, isLoading: timezoneLoading } = useUserTimezone();
+  const { reminders, checkReminders } = useReminders();
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -165,6 +167,13 @@ export default function HabitsPage() {
   useEffect(() => {
     fetchHabits();
   }, [timezone, timezoneLoading]);
+
+  // Example: Refresh reminders when habits are loaded
+  useEffect(() => {
+    if (timezone) {
+      checkReminders();
+    }
+  }, [timezone, checkReminders]);
 
   const filteredHabits = habits.filter(habit => {
     if (habitListTab === 'all') return true;
