@@ -42,6 +42,7 @@ interface HabitCardProps {
     frequency: 'daily' | 'weekly' | 'custom'
     frequency_days: number[]
     time_of_day: string | null
+    start_date: string
     current_streak: number
     todayStatus?: 'completed' | 'pending'
     is_active: boolean
@@ -165,6 +166,9 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
   }
 
   const getStatusColor = () => {
+    if (!hasHabitStarted()) {
+      return 'bg-muted text-muted-foreground'
+    }
     if (habit.todayStatus === 'completed') {
       return 'bg-success text-success-foreground'
     }
@@ -182,6 +186,20 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
       return habit.frequency_days.includes(today)
     }
     return true
+  }
+
+  // Check if the habit has started (based on start_date)
+  const hasHabitStarted = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const startDate = new Date(habit.start_date)
+    startDate.setHours(0, 0, 0, 0)
+    return startDate <= today
+  }
+
+  // Check if the habit should be active/pending today
+  const isActiveToday = () => {
+    return hasHabitStarted() && isScheduledForToday()
   }
 
   const getNextOccurrence = () => {
@@ -386,26 +404,26 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
       <Card className={cn(
         "transition-all duration-300 hover:shadow-md",
         habit.todayStatus === 'completed' ? "border-success/40 bg-success/5" : "",
-        !isScheduledForToday() ? "opacity-70" : ""
+        !isActiveToday() ? "opacity-70" : ""
       )}>
         <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="text-xl">{habit.name}</CardTitle>
+          <div className="flex justify-between items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-xl truncate">{habit.name}</CardTitle>
               {habit.category && (
                 <Badge variant="outline" className="mt-1">
                   {habit.category}
                 </Badge>
               )}
             </div>
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-1 flex-shrink-0">
               {habit.time_of_day && (
-                <Badge variant="outline" className="flex items-center gap-1">
+                <Badge variant="outline" className="flex items-center gap-1 text-xs">
                   <Clock className="h-3 w-3" />
                   {habit.time_of_day}
                 </Badge>
               )}
-              <Badge variant="secondary" className="flex items-center gap-1">
+              <Badge variant="secondary" className="flex items-center gap-1 text-xs">
                 <CalendarDays className="h-3 w-3" />
                 {frequencyText()}
               </Badge>
@@ -418,31 +436,43 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
           )}
         </CardHeader>
         <CardContent className="pb-2">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2">
-              <div className="bg-orange-500/10 text-orange-500 p-1 rounded-full">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="bg-orange-500/10 text-orange-500 p-1 rounded-full flex-shrink-0">
                 <Flame className="h-4 w-4" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="text-xs text-muted-foreground">Current Streak</div>
-                <div className="font-bold">{habit.current_streak} {habit.current_streak === 1 ? 'day' : 'days'}</div>
+                <div className="font-bold text-sm">{habit.current_streak} {habit.current_streak === 1 ? 'day' : 'days'}</div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className={cn("p-1 rounded-full", getStatusColor())}>
+            <div className="flex items-center gap-2 min-w-0">
+              <div className={cn("p-1 rounded-full flex-shrink-0", getStatusColor())}>
                 <Check className="h-4 w-4" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="text-xs text-muted-foreground">Today</div>
-                <div className="font-bold">{habit.todayStatus === 'completed' ? 'Completed' : 'Pending'}</div>
+                <div className="font-bold text-sm">
+                  {!hasHabitStarted() 
+                    ? 'Future' 
+                    : habit.todayStatus === 'completed' 
+                    ? 'Completed' 
+                    : 'Pending'
+                  }
+                </div>
               </div>
             </div>
           </div>
 
-          {!isScheduledForToday() && (
+          {!isActiveToday() && (
             <div className="flex items-center gap-2 mt-3 text-muted-foreground text-xs">
               <AlertTriangle className="h-3 w-3" />
-              <span>Not scheduled for today</span>
+              <span>
+                {!hasHabitStarted() 
+                  ? `Starts ${format(new Date(habit.start_date), 'MMM d, yyyy')}`
+                  : 'Not scheduled for today'
+                }
+              </span>
             </div>
           )}
           
@@ -453,12 +483,13 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-between pt-2">
-          <div className="flex gap-2">
+        <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between pt-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Button 
               variant="outline" 
               size="sm" 
               asChild
+              className="flex-1 sm:flex-none"
             >
               <Link href={`/habits/${habit.id}`}>
                 Details
@@ -468,7 +499,10 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
               variant={hasReminder ? "default" : "ghost"}
               size="sm"
               onClick={openReminderDialog}
-              className={hasReminder ? "bg-blue-500 hover:bg-blue-600 text-white" : "text-blue-500"}
+              className={cn(
+                "flex-shrink-0",
+                hasReminder ? "bg-blue-500 hover:bg-blue-600 text-white" : "text-blue-500"
+              )}
               title={hasReminder ? "Remove reminder for this habit" : "Set a reminder for this habit"}
               disabled={isCreatingReminder}
             >
@@ -478,12 +512,23 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
           <Button
             variant={habit.todayStatus === 'completed' ? 'outline' : 'default'}
             size="sm"
-            className={habit.todayStatus === 'completed' ? 'border-success text-success hover:bg-success/10' : ''}
+            className={cn(
+              "w-full sm:w-auto",
+              habit.todayStatus === 'completed' ? 'border-success text-success hover:bg-success/10' : ''
+            )}
             onClick={() => onUpdateStatus(habit.id, 'completed')}
-            disabled={isUpdating || !habit.is_active}
-            title={!habit.is_active ? 'This habit is inactive and cannot be completed' : undefined}
+            disabled={isUpdating || !habit.is_active || !hasHabitStarted()}
+            title={
+              !habit.is_active 
+                ? 'This habit is inactive and cannot be completed' 
+                : !hasHabitStarted()
+                ? `This habit starts on ${format(new Date(habit.start_date), 'MMM d, yyyy')}`
+                : undefined
+            }
           >
-            {habit.todayStatus === 'completed' ? (
+            {!hasHabitStarted() ? (
+              `Starts ${format(new Date(habit.start_date), 'MMM d')}`
+            ) : habit.todayStatus === 'completed' ? (
               <>
                 <Check className="mr-1 h-4 w-4" /> Completed
               </>

@@ -1,6 +1,19 @@
--- Consolidated LifeAware Database Schema
--- This file replaces all previous migrations with a single comprehensive schema
--- Note: PostgreSQL functions have been removed and will be handled in Next.js server-side code
+-- LifeAware Complete Database Schema
+-- Consolidated migration that replaces all previous migrations
+-- Includes: Profiles, Habits, Metrics, Goals, Reminders, Appearance Settings, Keep-Alive, and Habit Categories
+
+---------------------------
+-- UTILITY FUNCTIONS
+---------------------------
+
+-- Add trigger to update the updated_at column (used by multiple tables)
+CREATE OR REPLACE FUNCTION update_modified_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 ---------------------------
 -- PROFILES & USER DATA
@@ -15,23 +28,38 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   date_of_birth DATE NULL,
   timezone TEXT DEFAULT 'UTC' NULL,
   unit_system TEXT DEFAULT 'metric' NOT NULL,
+  font_size TEXT DEFAULT 'default' CHECK (font_size IN ('default', 'small', 'medium', 'large', 'xlarge')),
+  color_theme TEXT DEFAULT 'default',
+  display_mode TEXT DEFAULT 'system' CHECK (display_mode IN ('light', 'dark', 'system')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
 
+-- Add comments for profile columns
 COMMENT ON COLUMN public.profiles.unit_system IS 'Unit system preference (metric or imperial)';
+COMMENT ON COLUMN public.profiles.font_size IS 'User preferred font size setting';
+COMMENT ON COLUMN public.profiles.color_theme IS 'User preferred color theme name';
+COMMENT ON COLUMN public.profiles.display_mode IS 'User preferred display mode (light/dark/system)';
+
+-- Create index for performance on appearance settings queries
+CREATE INDEX IF NOT EXISTS idx_profiles_appearance_settings 
+ON public.profiles (font_size, color_theme, display_mode);
 
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Create policy to allow users to view/edit only their own profile
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
+
+-- Create policies for profiles table
 CREATE POLICY "Users can view their own profile" ON public.profiles 
   FOR SELECT USING (auth.uid() = id);
   
 CREATE POLICY "Users can update their own profile" ON public.profiles 
   FOR UPDATE USING (auth.uid() = id);
 
--- Create policy to allow users to insert their own profile
 CREATE POLICY "Users can insert their own profile" ON public.profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
@@ -39,8 +67,18 @@ CREATE POLICY "Users can insert their own profile" ON public.profiles
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Create user profile
   INSERT INTO public.profiles (id, username)
   VALUES (new.id, COALESCE(new.raw_user_meta_data->>'display_name', new.email));
+  
+  -- Create default habit categories for new user
+  INSERT INTO public.habit_categories (user_id, name, color, is_default)
+  VALUES 
+    (new.id, 'Health', '#10B981', true),
+    (new.id, 'Fitness', '#F59E0B', true),
+    (new.id, 'Productivity', '#3B82F6', true),
+    (new.id, 'Other', '#6B7280', true);
+  
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -50,20 +88,32 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- Create trigger for updated_at
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
+CREATE TRIGGER update_profiles_updated_at
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
+---------------------------
+-- STORAGE: AVATARS
+---------------------------
+
 -- Create avatars storage bucket
 INSERT INTO storage.buckets (id, name, public) 
 VALUES ('avatars', 'avatars', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Set up security policies for the avatars bucket
--- Policy: Public read access
+-- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Avatar Public Access" ON storage.objects;
+DROP POLICY IF EXISTS "Avatar Insert Access" ON storage.objects;
+DROP POLICY IF EXISTS "Avatar Update Access" ON storage.objects;
+DROP POLICY IF EXISTS "Avatar Delete Access" ON storage.objects;
+
+-- Set up security policies for the avatars bucket
 CREATE POLICY "Avatar Public Access"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'avatars');
 
--- Policy: Users can upload their own avatars
-DROP POLICY IF EXISTS "Avatar Insert Access" ON storage.objects;
 CREATE POLICY "Avatar Insert Access"
 ON storage.objects FOR INSERT
 WITH CHECK (
@@ -71,8 +121,6 @@ WITH CHECK (
     AND (auth.uid() = (storage.foldername(name))[1]::uuid)
 );
 
--- Policy: Users can update their own avatars
-DROP POLICY IF EXISTS "Avatar Update Access" ON storage.objects;
 CREATE POLICY "Avatar Update Access"
 ON storage.objects FOR UPDATE
 USING (
@@ -80,8 +128,6 @@ USING (
     AND (auth.uid() = (storage.foldername(name))[1]::uuid)
 );
 
--- Policy: Users can delete their own avatars
-DROP POLICY IF EXISTS "Avatar Delete Access" ON storage.objects;
 CREATE POLICY "Avatar Delete Access"
 ON storage.objects FOR DELETE
 USING (
@@ -89,22 +135,50 @@ USING (
     AND (auth.uid() = (storage.foldername(name))[1]::uuid)
 );
 
--- Add trigger to update the updated_at column (used by multiple tables)
-CREATE OR REPLACE FUNCTION update_modified_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER update_profiles_updated_at
-BEFORE UPDATE ON public.profiles
-FOR EACH ROW EXECUTE FUNCTION update_modified_column();
-
 ---------------------------
 -- HABITS SCHEMA
 ---------------------------
+
+-- Create habit categories table
+CREATE TABLE IF NOT EXISTS public.habit_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  color TEXT DEFAULT '#3B82F6',
+  icon TEXT,
+  is_default BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+  UNIQUE(user_id, name)
+);
+
+-- Create trigger for habit_categories updated_at
+DROP TRIGGER IF EXISTS update_habit_categories_updated_at ON public.habit_categories;
+CREATE TRIGGER update_habit_categories_updated_at
+  BEFORE UPDATE ON public.habit_categories
+  FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
+-- Enable Row Level Security for habit_categories
+ALTER TABLE public.habit_categories ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own habit categories" ON public.habit_categories;
+DROP POLICY IF EXISTS "Users can insert their own habit categories" ON public.habit_categories;
+DROP POLICY IF EXISTS "Users can update their own habit categories" ON public.habit_categories;
+DROP POLICY IF EXISTS "Users can delete their own habit categories" ON public.habit_categories;
+
+-- Create policies for habit_categories table
+CREATE POLICY "Users can view their own habit categories" ON public.habit_categories
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own habit categories" ON public.habit_categories
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own habit categories" ON public.habit_categories
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own habit categories" ON public.habit_categories
+  FOR DELETE USING (auth.uid() = user_id AND is_default = false);
 
 -- Create habits table
 CREATE TABLE IF NOT EXISTS public.habits (
@@ -113,9 +187,9 @@ CREATE TABLE IF NOT EXISTS public.habits (
   name TEXT NOT NULL,
   description TEXT,
   category TEXT,
-  frequency TEXT NOT NULL, -- 'daily', 'weekly', 'custom'
-  frequency_days INTEGER[] DEFAULT '{}'::INTEGER[], -- For custom frequency (0=Sunday, 1=Monday, etc.)
-  time_of_day TEXT, -- 'morning', 'afternoon', 'evening', 'anytime'
+  frequency TEXT NOT NULL,
+  frequency_days INTEGER[] DEFAULT '{}'::INTEGER[],
+  time_of_day TEXT,
   start_date DATE NOT NULL DEFAULT CURRENT_DATE,
   is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
@@ -127,14 +201,14 @@ CREATE TABLE IF NOT EXISTS public.habit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   habit_id UUID NOT NULL REFERENCES public.habits(id) ON DELETE CASCADE,
   completion_date DATE NOT NULL,
-  status TEXT NOT NULL CHECK (status = 'completed'), -- Only 'completed' status allowed
+  status TEXT NOT NULL CHECK (status = 'completed'),
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   UNIQUE(habit_id, completion_date)
 );
 
--- Create triggers for updated_at columns
+-- Create triggers for habits updated_at columns
 DROP TRIGGER IF EXISTS update_habits_updated_at ON public.habits;
 CREATE TRIGGER update_habits_updated_at
   BEFORE UPDATE ON public.habits
@@ -145,7 +219,7 @@ CREATE TRIGGER update_habit_logs_updated_at
   BEFORE UPDATE ON public.habit_logs
   FOR EACH ROW EXECUTE FUNCTION update_modified_column();
 
--- Enable Row Level Security
+-- Enable Row Level Security for habits
 ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.habit_logs ENABLE ROW LEVEL SECURITY;
 
@@ -186,6 +260,16 @@ CREATE POLICY "Users can update their own habit logs" ON public.habit_logs
 CREATE POLICY "Users can delete their own habit logs" ON public.habit_logs
   FOR DELETE USING (auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id));
 
+-- Insert simplified default categories for existing users
+INSERT INTO public.habit_categories (user_id, name, color, is_default)
+SELECT 
+  au.id,
+  unnest(ARRAY['Health', 'Fitness', 'Productivity', 'Other']),
+  unnest(ARRAY['#10B981', '#F59E0B', '#3B82F6', '#6B7280']),
+  true
+FROM auth.users au
+ON CONFLICT (user_id, name) DO NOTHING;
+
 ---------------------------
 -- METRICS SCHEMA
 ---------------------------
@@ -197,44 +281,35 @@ CREATE TABLE IF NOT EXISTS public.metric_templates (
   name TEXT NOT NULL,
   description TEXT,
   unit TEXT NOT NULL,
-  value_type TEXT NOT NULL, -- 'number', 'bloodpressure', 'bloodsugar'
-  normal_range_min DECIMAL,
-  normal_range_max DECIMAL,
-  target_min DECIMAL,
-  target_max DECIMAL,
+  value_type TEXT NOT NULL,
   is_active BOOLEAN NOT NULL DEFAULT true,
-  is_custom BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
 
--- Create metric logs table
+-- Create metrics logging table
 CREATE TABLE IF NOT EXISTS public.metric_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   metric_template_id UUID NOT NULL REFERENCES public.metric_templates(id) ON DELETE CASCADE,
-  measurement_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  value_numeric DECIMAL,
-  value_systolic INTEGER, -- For blood pressure
-  value_diastolic INTEGER, -- For blood pressure
-  value_bloodsugar DECIMAL, -- For blood sugar
-  context TEXT, -- E.g., "fasting", "post-meal", "morning"
+  value_number DECIMAL,
+  value_text TEXT,
+  recorded_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
 
--- Create table for metric reminders
+-- Create metric reminders table
 CREATE TABLE IF NOT EXISTS public.metric_reminders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   metric_template_id UUID NOT NULL REFERENCES public.metric_templates(id) ON DELETE CASCADE,
   reminder_time TIME NOT NULL,
-  days_of_week INTEGER[] DEFAULT '{0,1,2,3,4,5,6}'::INTEGER[], -- 0=Sunday, 1=Monday, etc.
-  is_enabled BOOLEAN NOT NULL DEFAULT true,
+  is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
 
--- Add trigger to update the updated_at column for metric tables
+-- Create triggers for metrics updated_at columns
 DROP TRIGGER IF EXISTS update_metric_templates_updated_at ON public.metric_templates;
 CREATE TRIGGER update_metric_templates_updated_at
 BEFORE UPDATE ON public.metric_templates
@@ -250,7 +325,7 @@ CREATE TRIGGER update_metric_reminders_updated_at
 BEFORE UPDATE ON public.metric_reminders
 FOR EACH ROW EXECUTE FUNCTION update_modified_column();
 
--- Enable Row Level Security
+-- Enable Row Level Security for metrics
 ALTER TABLE public.metric_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.metric_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.metric_reminders ENABLE ROW LEVEL SECURITY;
@@ -284,7 +359,7 @@ CREATE POLICY "Users can update their own metric templates" ON public.metric_tem
 CREATE POLICY "Users can delete their own metric templates" ON public.metric_templates
   FOR DELETE USING (auth.uid() = user_id);
 
--- Policies for metric logs
+-- Create policies for metric logs
 CREATE POLICY "Users can view their own metric logs" ON public.metric_logs
   FOR SELECT USING (auth.uid() = (SELECT user_id FROM public.metric_templates WHERE id = metric_template_id));
 
@@ -297,7 +372,7 @@ CREATE POLICY "Users can update their own metric logs" ON public.metric_logs
 CREATE POLICY "Users can delete their own metric logs" ON public.metric_logs
   FOR DELETE USING (auth.uid() = (SELECT user_id FROM public.metric_templates WHERE id = metric_template_id));
 
--- Policies for metric reminders
+-- Create policies for metric reminders
 CREATE POLICY "Users can view their own metric reminders" ON public.metric_reminders
   FOR SELECT USING (auth.uid() = (SELECT user_id FROM public.metric_templates WHERE id = metric_template_id));
 
@@ -310,52 +385,6 @@ CREATE POLICY "Users can update their own metric reminders" ON public.metric_rem
 CREATE POLICY "Users can delete their own metric reminders" ON public.metric_reminders
   FOR DELETE USING (auth.uid() = (SELECT user_id FROM public.metric_templates WHERE id = metric_template_id));
 
--- Insert default metric templates for all users
-INSERT INTO public.metric_templates 
-  (user_id, name, description, unit, value_type, normal_range_min, normal_range_max, is_custom)
-SELECT 
-  au.id, 
-  'Weight', 
-  'Track your body weight over time', 
-  'lbs', 
-  'number',
-  NULL,
-  NULL,
-  false
-FROM 
-  auth.users au
-ON CONFLICT DO NOTHING;
-
-INSERT INTO public.metric_templates 
-  (user_id, name, description, unit, value_type, normal_range_min, normal_range_max, is_custom)
-SELECT 
-  au.id, 
-  'Blood Pressure', 
-  'Track your blood pressure readings', 
-  'mmHg', 
-  'bloodpressure',
-  90,
-  120,
-  false
-FROM 
-  auth.users au
-ON CONFLICT DO NOTHING;
-
-INSERT INTO public.metric_templates 
-  (user_id, name, description, unit, value_type, normal_range_min, normal_range_max, is_custom)
-SELECT 
-  au.id, 
-  'Blood Sugar', 
-  'Track your blood glucose levels', 
-  'mg/dL', 
-  'bloodsugar',
-  70,
-  100,
-  false
-FROM 
-  auth.users au
-ON CONFLICT DO NOTHING;
-
 ---------------------------
 -- GOALS SCHEMA
 ---------------------------
@@ -367,13 +396,13 @@ CREATE TABLE IF NOT EXISTS public.goals (
   title TEXT NOT NULL,
   description TEXT,
   category TEXT,
-  metric TEXT NOT NULL, -- The unit being measured (e.g., "pounds", "dollars", "pages")
-  target_value NUMERIC NOT NULL, -- The goal target value
-  current_value NUMERIC NOT NULL DEFAULT 0, -- Current progress
-  deadline DATE NOT NULL,
-  start_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  is_completed BOOLEAN NOT NULL DEFAULT false,
-  is_active BOOLEAN NOT NULL DEFAULT true,
+  target_value DECIMAL,
+  target_unit TEXT,
+  current_value DECIMAL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'active',
+  start_date DATE DEFAULT CURRENT_DATE,
+  target_date DATE,
+  is_archived BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
@@ -384,52 +413,52 @@ CREATE TABLE IF NOT EXISTS public.goal_milestones (
   goal_id UUID NOT NULL REFERENCES public.goals(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT,
-  target_date DATE NOT NULL,
-  target_value NUMERIC NOT NULL,
+  target_value DECIMAL NOT NULL,
+  target_date DATE,
   is_completed BOOLEAN NOT NULL DEFAULT false,
+  completed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
 
--- Create goal progress logs table
+-- Create goal logs table
 CREATE TABLE IF NOT EXISTS public.goal_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   goal_id UUID NOT NULL REFERENCES public.goals(id) ON DELETE CASCADE,
-  log_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  value NUMERIC NOT NULL,
+  value DECIMAL NOT NULL,
   notes TEXT,
+  logged_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
 
--- Create table for goal reminders
+-- Create goal reminders table
 CREATE TABLE IF NOT EXISTS public.goal_reminders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   goal_id UUID NOT NULL REFERENCES public.goals(id) ON DELETE CASCADE,
-  reminder_date DATE NOT NULL,
   reminder_time TIME NOT NULL,
-  message TEXT,
-  is_enabled BOOLEAN NOT NULL DEFAULT true,
+  days_of_week INTEGER[] DEFAULT '{}'::INTEGER[],
+  is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
 
 -- Create reminders table
 CREATE TABLE IF NOT EXISTS reminders (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  habit_id UUID REFERENCES habits(id) ON DELETE CASCADE,
+  habit_id UUID REFERENCES public.habits(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT,
   due_date TIMESTAMP WITH TIME ZONE NOT NULL,
-  priority TEXT CHECK (priority IN ('High', 'Medium', 'Low')),
-  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed', 'dismissed')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  completed_at TIMESTAMP WITH TIME ZONE
+  priority TEXT DEFAULT 'Medium' CHECK (priority IN ('High', 'Medium', 'Low')),
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'completed', 'dismissed')),
+  completed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );
 
--- Add triggers to update the updated_at column
+-- Create triggers for goals updated_at columns
 DROP TRIGGER IF EXISTS update_goals_updated_at ON public.goals;
 CREATE TRIGGER update_goals_updated_at
 BEFORE UPDATE ON public.goals
@@ -450,12 +479,13 @@ CREATE TRIGGER update_goal_reminders_updated_at
 BEFORE UPDATE ON public.goal_reminders
 FOR EACH ROW EXECUTE FUNCTION update_modified_column();
 
+DROP TRIGGER IF EXISTS update_reminders_updated_at ON reminders;
 CREATE TRIGGER update_reminders_updated_at
 BEFORE UPDATE ON reminders
 FOR EACH ROW
 EXECUTE FUNCTION update_modified_column();
 
--- Enable Row Level Security
+-- Enable Row Level Security for goals
 ALTER TABLE public.goals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.goal_milestones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.goal_logs ENABLE ROW LEVEL SECURITY;
@@ -501,7 +531,7 @@ CREATE POLICY "Users can update their own goals" ON public.goals
 CREATE POLICY "Users can delete their own goals" ON public.goals
   FOR DELETE USING (auth.uid() = user_id);
 
--- Policies for goal milestones
+-- Create policies for goal milestones
 CREATE POLICY "Users can view their own goal milestones" ON public.goal_milestones
   FOR SELECT USING (auth.uid() = (SELECT user_id FROM public.goals WHERE id = goal_id));
 
@@ -514,7 +544,7 @@ CREATE POLICY "Users can update their own goal milestones" ON public.goal_milest
 CREATE POLICY "Users can delete their own goal milestones" ON public.goal_milestones
   FOR DELETE USING (auth.uid() = (SELECT user_id FROM public.goals WHERE id = goal_id));
 
--- Policies for goal logs
+-- Create policies for goal logs
 CREATE POLICY "Users can view their own goal logs" ON public.goal_logs
   FOR SELECT USING (auth.uid() = (SELECT user_id FROM public.goals WHERE id = goal_id));
 
@@ -527,7 +557,7 @@ CREATE POLICY "Users can update their own goal logs" ON public.goal_logs
 CREATE POLICY "Users can delete their own goal logs" ON public.goal_logs
   FOR DELETE USING (auth.uid() = (SELECT user_id FROM public.goals WHERE id = goal_id));
 
--- Policies for goal reminders
+-- Create policies for goal reminders
 CREATE POLICY "Users can view their own goal reminders" ON public.goal_reminders
   FOR SELECT USING (auth.uid() = (SELECT user_id FROM public.goals WHERE id = goal_id));
 
@@ -540,22 +570,41 @@ CREATE POLICY "Users can update their own goal reminders" ON public.goal_reminde
 CREATE POLICY "Users can delete their own goal reminders" ON public.goal_reminders
   FOR DELETE USING (auth.uid() = (SELECT user_id FROM public.goals WHERE id = goal_id));
 
--- Add RLS policies for reminders
-CREATE POLICY "Users can view their own reminders"
-  ON reminders FOR SELECT
-  USING (auth.uid() = user_id);
+-- Create policies for reminders
+CREATE POLICY "Users can view their own reminders" ON reminders
+  FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own reminders"
-  ON reminders FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own reminders" ON reminders
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own reminders"
-  ON reminders FOR UPDATE
-  USING (auth.uid() = user_id);
+CREATE POLICY "Users can update their own reminders" ON reminders
+  FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can delete their own reminders"
-  ON reminders FOR DELETE
-  USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own reminders" ON reminders
+  FOR DELETE USING (auth.uid() = user_id);
 
--- Cleanup 'missed' and 'skipped' habit logs to follow new schema
-UPDATE public.habit_logs SET status = 'completed' WHERE status IN ('missed', 'skipped'); 
+---------------------------
+-- KEEP-ALIVE TABLE
+---------------------------
+
+-- Create keep-alive table to prevent Supabase inactivity pausing
+CREATE TABLE IF NOT EXISTS "keep-alive" (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY,
+  name text NULL DEFAULT ''::text,
+  random uuid NULL DEFAULT gen_random_uuid(),
+  created_at timestamptz DEFAULT NOW(),
+  CONSTRAINT "keep-alive_pkey" PRIMARY KEY (id)
+);
+
+-- Insert initial placeholder data
+INSERT INTO "keep-alive"(name)
+VALUES 
+  ('placeholder'),
+  ('initial-entry')
+ON CONFLICT DO NOTHING;
+
+-- Add helpful comments
+COMMENT ON TABLE "keep-alive" IS 'Table used by GitHub Actions to keep Supabase project active by periodically inserting and cleaning up entries';
+COMMENT ON COLUMN "keep-alive".name IS 'Descriptive name for the keep-alive entry';
+COMMENT ON COLUMN "keep-alive".random IS 'Random UUID generated for each entry';
+COMMENT ON COLUMN "keep-alive".created_at IS 'Timestamp when the entry was created'; 

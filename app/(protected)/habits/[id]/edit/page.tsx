@@ -31,18 +31,13 @@ interface FormData {
   is_active: boolean;
 }
 
-const categories = [
-  'Health', 
-  'Fitness', 
-  'Productivity', 
-  'Learning', 
-  'Mindfulness', 
-  'Relationships', 
-  'Creativity', 
-  'Personal Growth',
-  'Finance',
-  'Other'
-];
+interface HabitCategory {
+  id: string;
+  name: string;
+  color: string;
+  icon?: string;
+  is_default: boolean;
+}
 
 const timesOfDay = [
   'Morning',
@@ -59,6 +54,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [categories, setCategories] = useState<HabitCategory[]>([]);
   
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -70,6 +66,22 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
     start_date: new Date(),
     is_active: true,
   });
+
+  // Fetch user's categories
+  const fetchCategories = async () => {
+    try {
+      const { data: categoriesData, error } = await supabase
+        .from('habit_categories')
+        .select('*')
+        .order('is_default', { ascending: false })
+        .order('name');
+
+      if (error) throw error;
+      setCategories(categoriesData || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchHabit = async () => {
@@ -89,6 +101,9 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
           router.push('/login');
           return;
         }
+
+        // Fetch categories first
+        await fetchCategories();
         
         const { data: habit, error } = await supabase
           .from('habits')
@@ -217,7 +232,13 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
   };
 
   if (isLoading) {
-    return <div className="container py-6">Loading habit data...</div>;
+    return (
+      <div className="container py-6 max-w-3xl">
+        <div className="py-12 text-center text-muted-foreground">
+          Loading habit details...
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -230,7 +251,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
         </Link>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Edit Habit</h1>
-          <p className="text-muted-foreground">Update your habit details</p>
+          <p className="text-muted-foreground">Modify your habit details</p>
         </div>
       </div>
 
@@ -238,7 +259,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
         <Card>
           <CardHeader>
             <CardTitle>Habit Details</CardTitle>
-            <CardDescription>Edit the details of your habit</CardDescription>
+            <CardDescription>Update the details of your habit</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -274,7 +295,15 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                      <SelectItem key={category.id} value={category.name}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          {category.name}
+                        </div>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -386,37 +415,40 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" type="button" disabled={isDeleting}>
-                  {isDeleting ? 'Deleting...' : 'Delete Habit'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete the habit and all of its tracking history. 
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            
-            <div className="space-x-2">
+            <div className="flex space-x-2">
               <Link href={`/habits/${id}`}>
                 <Button variant="outline">Cancel</Button>
               </Link>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Habit</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this habit? This action cannot be undone and will remove all tracking data.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {isDeleting ? "Deleting..." : "Delete Habit"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Updating...' : 'Update Habit'}
+            </Button>
           </CardFooter>
         </Card>
       </form>

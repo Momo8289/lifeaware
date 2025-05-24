@@ -30,7 +30,7 @@ export function Breadcrumb({
 }: BreadcrumbProps) {
   const segmentsLength = segments.length
   
-  // Determine if we need to collapse items (more aggressive on mobile)
+  // Determine if we need to collapse items (be more lenient)
   const shouldCollapse = segmentsLength > maxItems
   
   // Get visible segments (always show first and last)
@@ -60,18 +60,18 @@ export function Breadcrumb({
   return (
     <nav
       aria-label="Breadcrumb"
-      className={cn("flex items-center gap-1 text-sm md:gap-1.5 md:text-sm", className)}
+      className={cn("flex items-center text-xs sm:text-sm", className)}
       {...props}
     >
       <ol className="flex items-center gap-1 md:gap-1.5 min-w-0">
         {/* Home Link */}
-        <li className="flex items-center gap-1 md:gap-1.5 flex-shrink-0">
+        <li className="flex items-center flex-shrink-0">
           <Link
             href={homeLink}
-            className="flex items-center gap-1 md:gap-1.5 text-muted-foreground transition-colors hover:text-foreground p-1.5 md:p-1 rounded-md hover:bg-accent touch-manipulation min-h-[44px] md:min-h-0 justify-center"
+            className="flex items-center text-muted-foreground transition-colors hover:text-foreground p-1 rounded-md hover:bg-accent"
             aria-label="Home"
           >
-            <Home className="size-4 md:size-3.5" />
+            <Home className="size-3.5" />
             <span className="sr-only">Home</span>
           </Link>
         </li>
@@ -79,19 +79,19 @@ export function Breadcrumb({
         {/* Handle the case where we need to show ellipsis */}
         {hasHiddenSegments && (
           <>
-            <li className="flex items-center gap-1 md:gap-1.5 text-muted-foreground flex-shrink-0">
+            <li className="flex items-center text-muted-foreground flex-shrink-0">
               {separator}
             </li>
-            <li className="flex items-center">
+            <li className="flex items-center flex-shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-auto p-1.5 md:p-1 text-muted-foreground hover:text-foreground touch-manipulation min-h-[44px] md:min-h-0"
+                    className="h-auto p-1 text-muted-foreground hover:text-foreground"
                     aria-label={`Show ${hiddenSegments.length} hidden pages`}
                   >
-                    <MoreHorizontal className="size-4 md:size-3.5" />
+                    <MoreHorizontal className="size-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="min-w-[200px] max-w-[280px]">
@@ -121,13 +121,13 @@ export function Breadcrumb({
           
           return (
             <React.Fragment key={`${segment.href}-${actualIndex}`}>
-              <li className="flex items-center gap-1 md:gap-1.5 text-muted-foreground flex-shrink-0">
+              <li className="flex items-center text-muted-foreground flex-shrink-0">
                 {separator}
               </li>
-              <li className="min-w-0 flex-1">
+              <li className="min-w-0 max-w-[150px] sm:max-w-[200px]">
                 {isLastSegment ? (
                   <span 
-                    className="font-medium text-foreground block truncate px-1.5 md:px-1 py-1.5 md:py-1 text-sm md:text-sm leading-tight"
+                    className="font-medium text-foreground block px-1 py-1 text-xs sm:text-sm leading-tight truncate"
                     title={segment.title}
                   >
                     {segment.title}
@@ -135,7 +135,7 @@ export function Breadcrumb({
                 ) : (
                   <Link
                     href={segment.href}
-                    className="transition-colors hover:text-foreground block truncate px-1.5 md:px-1 py-1.5 md:py-1 rounded-md hover:bg-accent text-sm md:text-sm touch-manipulation min-h-[44px] md:min-h-0 flex items-center leading-tight"
+                    className="transition-colors hover:text-foreground block px-1 py-1 rounded-md hover:bg-accent text-xs sm:text-sm leading-tight truncate"
                     title={segment.title}
                   >
                     {segment.title}

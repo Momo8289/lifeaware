@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BellIcon, PlusIcon, CalendarDays, CheckCircle2, Clock } from "lucide-react";
-import Link from 'next/link';
+import { BellIcon, CalendarDays, CheckCircle2, Clock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,12 +110,6 @@ export default function RemindersPage() {
           <h1 className="text-3xl font-bold tracking-tight">Reminders</h1>
           <p className="text-muted-foreground">Manage your reminders and notifications</p>
         </div>
-        <Link href="/reminders/new">
-          <Button>
-            <PlusIcon className="h-4 w-4 mr-2" />
-            New Reminder
-          </Button>
-        </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-4">
@@ -144,10 +137,9 @@ export default function RemindersPage() {
 
       <Tabs defaultValue="active" className="w-full" value={activeTab} onValueChange={setActiveTab}>
         <div className="flex justify-between items-center">
-          <TabsList className="grid grid-cols-3 max-w-md">
+          <TabsList className="grid grid-cols-2 max-w-md">
             <TabsTrigger value="active">Active</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
         </div>
         
@@ -176,15 +168,9 @@ export default function RemindersPage() {
                 <div>
                   <h3 className="text-lg font-medium">No active reminders</h3>
                   <p className="text-muted-foreground mt-1">
-                    You don't have any active reminders. Add reminders from your habits by clicking the bell icon.
+                    You don't have any active reminders. Create reminders from your habits, goals, and other activities to stay on track.
                   </p>
                 </div>
-                <Button asChild className="mt-2">
-                  <Link href="/habits">
-                    <BellIcon className="h-4 w-4 mr-2" />
-                    Go to Habits
-                  </Link>
-                </Button>
               </CardContent>
             </Card>
           )}
@@ -216,18 +202,6 @@ export default function RemindersPage() {
               </CardContent>
             </Card>
           )}
-        </TabsContent>
-        
-        <TabsContent value="settings" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Reminder Settings</CardTitle>
-              <CardDescription>Configure how you receive reminders</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Reminder settings will be available soon.</p>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

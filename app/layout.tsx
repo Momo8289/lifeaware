@@ -7,6 +7,7 @@ import CookieConsent from "@/components/CookieConsent";
 import { Toaster } from "@/components/ui/toaster";
 import { ReminderProvider } from "@/components/providers/ReminderProvider";
 import { SettingsApplier } from "@/components/settings-applier";
+import { ThemeScript } from "@/components/theme-script";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,6 +27,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"

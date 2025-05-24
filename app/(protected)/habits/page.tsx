@@ -13,6 +13,7 @@ import { toast } from '@/components/ui/use-toast';
 import { HabitCard } from '@/components/habits/HabitCard';
 import { HabitInsights } from '@/components/habits/HabitInsights';
 import { HabitGamification } from '@/components/habits/HabitGamification';
+import { NewHabitModal } from '@/components/habits/NewHabitModal';
 import { createBrowserClient } from '@supabase/ssr';
 import { useUserTimezone } from '@/lib/hooks/useUserTimezone';
 import { getTodayInTimezone } from '@/lib/utils/timezone';
@@ -56,6 +57,7 @@ export default function HabitsPage() {
   const [activeTab, setActiveTab] = useState('habits');
   const [habitListTab, setHabitListTab] = useState('active');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [showNewHabitModal, setShowNewHabitModal] = useState(false);
   const { timezone, isLoading: timezoneLoading } = useUserTimezone();
   const { reminders, checkReminders } = useReminders();
 
@@ -151,7 +153,21 @@ export default function HabitsPage() {
             current_streak: streakData,
             completions: habitLogs.length,
             total_days: diffDays,
-            todayStatus: todayLog ? todayLog.status as 'completed' | 'pending' : 'pending'
+            todayStatus: (() => {
+              // Check if habit has started
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const startDate = new Date(habit.start_date);
+              startDate.setHours(0, 0, 0, 0);
+              
+              // If habit hasn't started yet, don't assign any today status
+              if (startDate > today) {
+                return undefined;
+              }
+              
+              // If habit has started, return the actual status or default to pending
+              return todayLog ? todayLog.status as 'completed' | 'pending' : 'pending';
+            })()
           };
         })
       );
@@ -177,7 +193,19 @@ export default function HabitsPage() {
 
   // Sort habits so that pending habits appear first and completed habits appear last
   const sortedHabits = [...filteredHabits].sort((a, b) => {
-    // Define priority order: pending > completed
+    // Check if habits have started
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const aStarted = new Date(a.start_date) <= today;
+    const bStarted = new Date(b.start_date) <= today;
+    
+    // Future habits go to the end
+    if (!aStarted && bStarted) return 1;
+    if (aStarted && !bStarted) return -1;
+    if (!aStarted && !bStarted) return 0; // Both future, maintain order
+    
+    // For started habits, define priority order: pending > completed
     const priority = {
       'pending': 0,
       'completed': 1
@@ -203,6 +231,24 @@ export default function HabitsPage() {
           duration: 3000,
         });
         return;
+      }
+      
+      // Prevent updating habits that haven't started yet
+      if (currentHabit) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDate = new Date(currentHabit.start_date);
+        startDate.setHours(0, 0, 0, 0);
+        
+        if (startDate > today) {
+          toast({
+            title: "Cannot update future habit",
+            description: `This habit starts on ${startDate.toLocaleDateString()}.`,
+            variant: "destructive",
+            duration: 3000,
+          });
+          return;
+        }
       }
       
       // Check if we're toggling off the current status (same status clicked twice)
@@ -270,6 +316,14 @@ export default function HabitsPage() {
     }
   };
 
+  const handleHabitCreated = () => {
+    fetchHabits(); // Refresh the habits list
+  };
+
+  const handleNewHabitClick = () => {
+    setShowNewHabitModal(true);
+  };
+
   return (
     <div className="container py-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -277,12 +331,10 @@ export default function HabitsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Habits</h1>
           <p className="text-muted-foreground">Track and manage your daily habits</p>
         </div>
-        <Link href="/habits/new">
-          <Button>
-            <PlusIcon className="h-4 w-4 mr-2" />
-            New Habit
-          </Button>
-        </Link>
+        <Button onClick={handleNewHabitClick}>
+          <PlusIcon className="h-4 w-4 mr-2" />
+          New Habit
+        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-4">
@@ -298,12 +350,29 @@ export default function HabitsPage() {
         />
         <StatsCard 
           title="Completed Today" 
-          value={habits.filter(h => h.todayStatus === 'completed').length.toString()} 
+          value={habits.filter(h => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const startDate = new Date(h.start_date);
+            startDate.setHours(0, 0, 0, 0);
+            return startDate <= today && h.todayStatus === 'completed';
+          }).length.toString()} 
           icon={<Calendar className="h-4 w-4 text-green-500" />} 
         />
         <StatsCard 
           title="Completion Rate" 
-          value={`${Math.round((habits.filter(h => h.todayStatus === 'completed').length / (habits.length || 1)) * 100)}%`} 
+          value={(() => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const startedHabits = habits.filter(h => {
+              const startDate = new Date(h.start_date);
+              startDate.setHours(0, 0, 0, 0);
+              return startDate <= today;
+            });
+            const completedToday = startedHabits.filter(h => h.todayStatus === 'completed').length;
+            const rate = startedHabits.length > 0 ? Math.round((completedToday / startedHabits.length) * 100) : 0;
+            return `${rate}%`;
+          })()} 
           icon={<LineChart className="h-4 w-4 text-blue-500" />} 
         />
       </div>
@@ -336,7 +405,7 @@ export default function HabitsPage() {
               Loading your habits...
             </div>
           ) : sortedHabits.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {sortedHabits.map(habit => (
                 <HabitCard 
                   key={habit.id} 
@@ -363,11 +432,9 @@ export default function HabitsPage() {
                   )}
                 </div>
                 {habitListTab !== 'inactive' && (
-                  <Button asChild className="mt-2">
-                    <Link href="/habits/new">
-                      <PlusIcon className="h-4 w-4 mr-2" />
-                      Create First Habit
-                    </Link>
+                  <Button onClick={handleNewHabitClick} className="mt-2">
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Create First Habit
                   </Button>
                 )}
               </CardContent>
@@ -383,6 +450,12 @@ export default function HabitsPage() {
           <HabitGamification habits={habits} logs={logs} />
         </TabsContent>
       </Tabs>
+
+      <NewHabitModal 
+        open={showNewHabitModal} 
+        onOpenChange={setShowNewHabitModal}
+        onHabitCreated={handleHabitCreated}
+      />
     </div>
   );
 }

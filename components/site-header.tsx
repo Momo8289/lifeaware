@@ -118,7 +118,49 @@ export function SiteHeader() {
           }
         }
         
-        // Add checks for other entity types (goals, metrics, etc.) here
+        // Check for goal IDs
+        if (pathname.includes('/goals/')) {
+          for (const id of segmentsToLoad) {
+            // Check if this ID appears after '/goals/' in the path
+            if (pathname.includes(`/goals/${id}`)) {
+              const { data } = await supabase
+                .from('goals')
+                .select('title')
+                .eq('id', id)
+                .single();
+                
+              if (data?.title) {
+                newTitles[id] = data.title;
+                // Also update sessionStorage for future use
+                sessionStorage.setItem(`breadcrumb_${id}`, data.title);
+                updated = true;
+              }
+            }
+          }
+        }
+        
+        // Check for metric IDs
+        if (pathname.includes('/metrics/')) {
+          for (const id of segmentsToLoad) {
+            // Check if this ID appears after '/metrics/' in the path
+            if (pathname.includes(`/metrics/${id}`)) {
+              const { data } = await supabase
+                .from('metric_templates')
+                .select('name')
+                .eq('id', id)
+                .single();
+                
+              if (data?.name) {
+                newTitles[id] = data.name;
+                // Also update sessionStorage for future use
+                sessionStorage.setItem(`breadcrumb_${id}`, data.name);
+                updated = true;
+              }
+            }
+          }
+        }
+        
+        // Add checks for other entity types here if needed
         
         if (updated) {
           setLoadedTitles(newTitles);
@@ -149,8 +191,8 @@ export function SiteHeader() {
   if (!isClient) {
     return (
       <header className="group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
-        <div className="flex w-full items-center justify-between gap-1 px-4 lg:gap-2 lg:px-6">
-          <div className="flex items-center gap-1 lg:gap-2 min-w-0 flex-1">
+        <div className="flex w-full items-center justify-between gap-2 px-4 lg:px-6">
+          <div className="flex items-center gap-2 min-w-0">
             <SidebarTrigger className="-ml-1 flex-shrink-0" />
             <Separator
               orientation="vertical"
@@ -159,11 +201,13 @@ export function SiteHeader() {
             <Breadcrumb 
               segments={generateBreadcrumbs(false)} 
               homeLink="/dashboard"
-              maxItems={2}
-              className="min-w-0 flex-1"
+              maxItems={3}
+              className="min-w-0"
             />
           </div>
-          <ThemeSwitcher />
+          <div className="flex-shrink-0">
+            <ThemeSwitcher />
+          </div>
         </div>
       </header>
     )
@@ -171,8 +215,8 @@ export function SiteHeader() {
   
   return (
     <header className="group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
-      <div className="flex w-full items-center justify-between gap-1 px-4 lg:gap-2 lg:px-6">
-        <div className="flex items-center gap-1 lg:gap-2 min-w-0 flex-1">
+      <div className="flex w-full items-center justify-between gap-2 px-4 lg:px-6">
+        <div className="flex items-center gap-2 min-w-0">
           <SidebarTrigger className="-ml-1 flex-shrink-0" />
           <Separator
             orientation="vertical"
@@ -181,11 +225,13 @@ export function SiteHeader() {
           <Breadcrumb 
             segments={breadcrumbs} 
             homeLink="/dashboard"
-            maxItems={2}
-            className="min-w-0 flex-1"
+            maxItems={3}
+            className="min-w-0"
           />
         </div>
-        <ThemeSwitcher />
+        <div className="flex-shrink-0">
+          <ThemeSwitcher />
+        </div>
       </div>
     </header>
   )
