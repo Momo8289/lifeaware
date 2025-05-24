@@ -1,0 +1,153 @@
+name: Supabase Health Monitor
+
+on:
+  schedule:
+    # Run every 10 minutes during active hours (8 AM - 10 PM UTC)
+    - cron: '*/60 8-22 * * *'
+    # Run every 30 minutes during off hours to save quota
+    - cron: '*/60 22-8 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  MAX_RETRIES: 3
+  RETRY_DELAY: 5
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Supabase Database Health Check
+        id: db-check
+        run: |
+          echo "🔍 Checking Supabase database health..."
+          
+          for i in $(seq 1 $MAX_RETRIES); do
+            if curl -f -s "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+              -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -w "HTTP Status: %{http_code}, Response Time: %{time_total}s\n" > /tmp/db_response 2>&1; then
+              echo "✅ Database ping successful on attempt $i"
+              cat /tmp/db_response
+              echo "db_status=success" >> $GITHUB_OUTPUT
+              break
+            else
+              echo "❌ Database ping failed on attempt $i"
+              if [ $i -eq $MAX_RETRIES ]; then
+                echo "db_status=failed" >> $GITHUB_OUTPUT
+              else
+                echo "⏳ Retrying in ${RETRY_DELAY}s..."
+                sleep $RETRY_DELAY
+              fi
+            fi
+          done
+
+      - name: Supabase Auth Health Check
+        id: auth-check
+        run: |
+          echo "🔐 Checking Supabase auth health..."
+          
+          if curl -f -s "${{ secrets.SUPABASE_URL }}/auth/v1/health" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -w "HTTP Status: %{http_code}, Response Time: %{time_total}s\n" > /tmp/auth_response 2>&1; then
+            echo "✅ Auth service healthy"
+            cat /tmp/auth_response
+            echo "auth_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Auth service check failed"
+            echo "auth_status=failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Application Health Check
+        id: app-check
+        if: ${{ secrets.APP_URL != '' }}
+        run: |
+          echo "🚀 Checking application health..."
+          
+          if curl -f -s "${{ secrets.APP_URL }}" \
+            -H "User-Agent: GitHub-Actions-Health-Check" \
+            -w "HTTP Status: %{http_code}, Response Time: %{time_total}s\n" > /tmp/app_response 2>&1; then
+            echo "✅ Application ping successful"
+            cat /tmp/app_response
+            echo "app_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Application ping failed"
+            echo "app_status=failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Edge Functions Health Check
+        id: functions-check
+        run: |
+          echo "⚡ Checking Edge Functions health..."
+          
+          if curl -f -s "${{ secrets.SUPABASE_URL }}/functions/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -w "HTTP Status: %{http_code}, Response Time: %{time_total}s\n" > /tmp/functions_response 2>&1; then
+            echo "✅ Edge Functions accessible"
+            cat /tmp/functions_response
+            echo "functions_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️ Edge Functions check failed (may not be configured)"
+            echo "functions_status=skipped" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Health Summary
+        run: |
+          echo "📊 HEALTH CHECK SUMMARY"
+          echo "======================="
+          echo "🕐 Timestamp: $(date -u)"
+          echo "🗄️  Database: ${{ steps.db-check.outputs.db_status }}"
+          echo "🔐 Auth: ${{ steps.auth-check.outputs.auth_status }}"
+          echo "🚀 App: ${{ steps.app-check.outputs.app_status || 'not-configured' }}"
+          echo "⚡ Functions: ${{ steps.functions-check.outputs.functions_status }}"
+          echo "======================="
+          
+          # Set overall status
+          if [[ "${{ steps.db-check.outputs.db_status }}" == "success" ]]; then
+            echo "🎉 Supabase project is healthy and awake!"
+            echo "overall_status=healthy" >> $GITHUB_ENV
+          else
+            echo "⚠️ Some health checks failed"
+            echo "overall_status=degraded" >> $GITHUB_ENV
+          fi
+
+      - name: Create Issue on Failure
+        if: ${{ steps.db-check.outputs.db_status == 'failed' && github.event_name == 'schedule' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { repo, owner } = context.repo;
+            const title = `🚨 Supabase Health Check Failed - ${new Date().toISOString()}`;
+            const body = `
+            ## Health Check Failure Report
+            
+            **Time**: ${new Date().toUTCString()}
+            **Database Status**: ${{ steps.db-check.outputs.db_status }}
+            **Auth Status**: ${{ steps.auth-check.outputs.auth_status }}
+            **App Status**: ${{ steps.app-check.outputs.app_status || 'not-configured' }}
+            **Functions Status**: ${{ steps.functions-check.outputs.functions_status }}
+            
+            The automated health check detected issues with the Supabase project.
+            Please investigate and resolve the issues.
+            
+            **Workflow Run**: ${context.payload.repository.html_url}/actions/runs/${context.runId}
+            `;
+            
+            // Check if there's already an open issue
+            const issues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              labels: ['supabase-health', 'automated']
+            });
+            
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body,
+                labels: ['supabase-health', 'automated', 'bug']
+              });
+            } 
