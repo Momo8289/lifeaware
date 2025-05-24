@@ -1,0 +1,148 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # Run twice a week (Monday and Thursday at midnight UTC)
+    # This is frequent enough to prevent inactivity but conserves GitHub Actions minutes
+    - cron: '0 0 * * 1,4'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    environment: Production  # Use your environment secrets
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install supabase python-dotenv requests
+
+      - name: Create config files
+        run: |
+          # Create config.json for the keep-alive script
+          cat > config.json << 'EOF'
+          [
+            {
+              "name": "Lifeaware",
+              "supabase_url": "${{ secrets.SUPABASE_URL }}",
+              "supabase_key": "${{ secrets.SUPABASE_ANON_KEY }}",
+              "table_name": "keep-alive",
+              "max_entries": 50
+            }
+          ]
+          EOF
+          
+          echo "✅ Config file created"
+
+      - name: Run Supabase Keep Alive
+        run: |
+          python << 'EOF'
+          import json
+          import os
+          import random
+          import string
+          from datetime import datetime
+          from supabase import create_client, Client
+          
+          def generate_random_string(length=10):
+              """Generate a random string of specified length."""
+              return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+          
+          def process_database(config):
+              """Process a single database configuration."""
+              name = config.get("name", "Unknown")
+              supabase_url = config.get("supabase_url")
+              supabase_key = config.get("supabase_key") 
+              table_name = config.get("table_name", "keep-alive")
+              max_entries = config.get("max_entries", 50)
+              
+              print(f"🔄 Processing database: {name}")
+              
+              if not supabase_url or not supabase_key:
+                  print(f"❌ Missing URL or key for {name}")
+                  return False
+              
+              try:
+                  # Create Supabase client
+                  supabase: Client = create_client(supabase_url, supabase_key)
+                  
+                  # Insert a new keep-alive entry
+                  random_name = f"github-action-{generate_random_string()}"
+                  insert_result = supabase.table(table_name).insert({
+                      "name": random_name
+                  }).execute()
+                  
+                  print(f"✅ Inserted entry: {random_name}")
+                  
+                  # Check current entry count
+                  count_result = supabase.table(table_name).select("id", count="exact").execute()
+                  entry_count = count_result.count
+                  
+                  print(f"📊 Total entries in {table_name}: {entry_count}")
+                  
+                  # Clean up old entries if we exceed max_entries
+                  if entry_count > max_entries:
+                      # Get oldest entries to delete
+                      entries_to_delete = entry_count - max_entries
+                      old_entries = supabase.table(table_name).select("id").order("created_at").limit(entries_to_delete).execute()
+                      
+                      if old_entries.data:
+                          ids_to_delete = [entry["id"] for entry in old_entries.data]
+                          delete_result = supabase.table(table_name).delete().in_("id", ids_to_delete).execute()
+                          print(f"🧹 Cleaned up {len(ids_to_delete)} old entries")
+                  
+                  print(f"🎉 Successfully processed {name}")
+                  return True
+                  
+              except Exception as e:
+                  print(f"❌ Error processing {name}: {str(e)}")
+                  return False
+          
+          def main():
+              """Main function to process all databases."""
+              print(f"🚀 Starting Supabase Keep Alive - {datetime.now()}")
+              
+              # Load configuration
+              try:
+                  with open('config.json', 'r') as f:
+                      databases = json.load(f)
+              except Exception as e:
+                  print(f"❌ Error loading config: {str(e)}")
+                  return
+              
+              if not databases:
+                  print("❌ No databases configured")
+                  return
+              
+              # Process each database
+              success_count = 0
+              for db_config in databases:
+                  if process_database(db_config):
+                      success_count += 1
+              
+              print(f"\n📈 Summary: {success_count}/{len(databases)} databases processed successfully")
+              
+              if success_count == len(databases):
+                  print("🎉 All databases processed successfully!")
+              else:
+                  print("⚠️  Some databases failed to process")
+          
+          if __name__ == "__main__":
+              main()
+          EOF
+
+      - name: Cleanup
+        run: |
+          # Remove config file (security)
+          rm -f config.json
+          echo "�� Cleanup completed" 
