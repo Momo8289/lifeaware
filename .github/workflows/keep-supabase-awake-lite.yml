@@ -14,14 +14,37 @@ jobs:
     steps:
       - name: Ping Supabase Project
         run: |
-          # Simple ping to keep Supabase awake
-          curl -f -s "${{ secrets.SUPABASE_URL }}/rest/v1/" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" || echo "Ping failed but continuing..."
+          echo "🔍 Starting Supabase health check..."
+          echo "Timestamp: $(date)"
           
-          echo "✅ Pinged Supabase at $(date)"
+          # Check if secrets are available
+          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then
+            echo "❌ SUPABASE_URL secret is not set"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.SUPABASE_ANON_KEY }}" ]; then
+            echo "❌ SUPABASE_ANON_KEY secret is not set"
+            exit 1
+          fi
+          
+          echo "✅ Secrets are configured"
+          
+          # Simple ping to keep Supabase awake with better error handling
+          echo "🚀 Pinging Supabase..."
+          if curl -f -s "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            --max-time 30 \
+            --retry 2 \
+            --retry-delay 3; then
+            echo "✅ Pinged Supabase successfully at $(date)"
+          else
+            echo "❌ Supabase ping failed - but continuing to avoid breaking the workflow"
+            echo "Exit code: $?"
+          fi
 
       - name: Health Check Log
         run: |
           echo "🏥 Health check completed at $(date)"
-          echo "🚀 Keeping your project alive and healthy!" 
+          echo "🚀 Workflow finished - keeping your project alive!" 
