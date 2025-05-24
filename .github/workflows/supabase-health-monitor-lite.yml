@@ -1,16 +1,18 @@
-name: Supabase Health Monitor
+name: Supabase Health Monitor (Lite)
 
 on:
   schedule:
-    # Run every 10 minutes during active hours (8 AM - 10 PM UTC)
-    - cron: '*/10 8-22 * * *'
-    # Run every 30 minutes during off hours to save quota
-    - cron: '*/30 22-8 * * *'
+    # Run every 2 hours during active hours (8 AM - 10 PM UTC)
+    # 7 runs/day × 30 days × 2 minutes = ~420 minutes/month
+    - cron: '0 8-22/2 * * *'
+    # Run every 4 hours during off hours (10 PM, 2 AM, 6 AM UTC)  
+    # 3 runs/day × 30 days × 2 minutes = ~180 minutes/month
+    - cron: '0 22,2,6 * * *'
   workflow_dispatch: # Allow manual triggering
 
 env:
-  MAX_RETRIES: 3
-  RETRY_DELAY: 5
+  MAX_RETRIES: 2
+  RETRY_DELAY: 3
 
 jobs:
   health-check:
@@ -58,40 +60,6 @@ jobs:
             echo "auth_status=failed" >> $GITHUB_OUTPUT
           fi
 
-      - name: Application Health Check
-        id: app-check
-        if: ${{ secrets.APP_URL != '' }}
-        run: |
-          echo "🚀 Checking application health..."
-          
-          if curl -f -s "${{ secrets.APP_URL }}" \
-            -H "User-Agent: GitHub-Actions-Health-Check" \
-            -w "HTTP Status: %{http_code}, Response Time: %{time_total}s\n" > /tmp/app_response 2>&1; then
-            echo "✅ Application ping successful"
-            cat /tmp/app_response
-            echo "app_status=success" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Application ping failed"
-            echo "app_status=failed" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Edge Functions Health Check
-        id: functions-check
-        run: |
-          echo "⚡ Checking Edge Functions health..."
-          
-          if curl -f -s "${{ secrets.SUPABASE_URL }}/functions/v1/" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -w "HTTP Status: %{http_code}, Response Time: %{time_total}s\n" > /tmp/functions_response 2>&1; then
-            echo "✅ Edge Functions accessible"
-            cat /tmp/functions_response
-            echo "functions_status=success" >> $GITHUB_OUTPUT
-          else
-            echo "ℹ️ Edge Functions check failed (may not be configured)"
-            echo "functions_status=skipped" >> $GITHUB_OUTPUT
-          fi
-
       - name: Health Summary
         run: |
           echo "📊 HEALTH CHECK SUMMARY"
@@ -99,17 +67,12 @@ jobs:
           echo "🕐 Timestamp: $(date -u)"
           echo "🗄️  Database: ${{ steps.db-check.outputs.db_status }}"
           echo "🔐 Auth: ${{ steps.auth-check.outputs.auth_status }}"
-          echo "🚀 App: ${{ steps.app-check.outputs.app_status || 'not-configured' }}"
-          echo "⚡ Functions: ${{ steps.functions-check.outputs.functions_status }}"
           echo "======================="
           
-          # Set overall status
           if [[ "${{ steps.db-check.outputs.db_status }}" == "success" ]]; then
             echo "🎉 Supabase project is healthy and awake!"
-            echo "overall_status=healthy" >> $GITHUB_ENV
           else
             echo "⚠️ Some health checks failed"
-            echo "overall_status=degraded" >> $GITHUB_ENV
           fi
 
       - name: Create Issue on Failure
@@ -125,8 +88,6 @@ jobs:
             **Time**: ${new Date().toUTCString()}
             **Database Status**: ${{ steps.db-check.outputs.db_status }}
             **Auth Status**: ${{ steps.auth-check.outputs.auth_status }}
-            **App Status**: ${{ steps.app-check.outputs.app_status || 'not-configured' }}
-            **Functions Status**: ${{ steps.functions-check.outputs.functions_status }}
             
             The automated health check detected issues with the Supabase project.
             Please investigate and resolve the issues.

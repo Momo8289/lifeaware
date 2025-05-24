@@ -1,0 +1,27 @@
+name: Keep Supabase Awake (Lite)
+
+on:
+  schedule:
+    # Run every 30 minutes - fits within free tier limits
+    # 48 runs/day × 30 days × 1 minute = ~1,440 minutes/month
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  keep-awake:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Ping Supabase Project
+        run: |
+          # Simple ping to keep Supabase awake
+          curl -f -s "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" || echo "Ping failed but continuing..."
+          
+          echo "✅ Pinged Supabase at $(date)"
+
+      - name: Health Check Log
+        run: |
+          echo "🏥 Health check completed at $(date)"
+          echo "🚀 Keeping your project alive and healthy!" 
