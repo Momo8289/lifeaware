@@ -1,4 +1,7 @@
 import { Separator } from "@/components/ui/separator"
+import { FontSizeSelector } from "@/components/ui/font-size-selector"
+import { ModeSelector } from "@/components/ui/mode-selector"
+import { ThemeSelector } from "@/components/ui/theme-selector"
 
 export default function AppearancePage() {
   return (
@@ -10,8 +13,13 @@ export default function AppearancePage() {
         </p>
       </div>
       <Separator />
-      <div className="p-4 border rounded-md">
-        <p className="text-muted-foreground">Appearance settings are coming soon.</p>
+      
+      <div className="space-y-8">
+        <FontSizeSelector />
+        <Separator />
+        <ModeSelector />
+        <Separator />
+        <ThemeSelector />
       </div>
     </div>
   )

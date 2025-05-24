@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import CookieConsent from "@/components/CookieConsent";
 import { Toaster } from "@/components/ui/toaster";
 import { ReminderProvider } from "@/components/providers/ReminderProvider";
+import { SettingsApplier } from "@/components/settings-applier";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -33,6 +34,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
+            <SettingsApplier />
             <ReminderProvider>
               {children}
               <CookieConsent />
