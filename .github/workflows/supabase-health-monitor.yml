@@ -3,9 +3,9 @@ name: Supabase Health Monitor
 on:
   schedule:
     # Run every 10 minutes during active hours (8 AM - 10 PM UTC)
-    - cron: '*/60 8-22 * * *'
+    - cron: '*/10 8-22 * * *'
     # Run every 30 minutes during off hours to save quota
-    - cron: '*/60 22-8 * * *'
+    - cron: '*/30 22-8 * * *'
   workflow_dispatch: # Allow manual triggering
 
 env:
