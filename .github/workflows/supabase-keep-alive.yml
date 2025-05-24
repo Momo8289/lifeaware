@@ -16,133 +16,125 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install supabase python-dotenv requests
-
-      - name: Create config files
-        run: |
-          # Create config.json for the keep-alive script
-          cat > config.json << 'EOF'
-          [
-            {
-              "name": "Lifeaware",
-              "supabase_url": "${{ secrets.SUPABASE_URL }}",
-              "supabase_key": "${{ secrets.SUPABASE_ANON_KEY }}",
-              "table_name": "keep-alive",
-              "max_entries": 50
-            }
-          ]
-          EOF
-          
-          echo "✅ Config file created"
+          npm install @supabase/supabase-js
 
       - name: Run Supabase Keep Alive
         run: |
-          python << 'EOF'
-          import json
-          import os
-          import random
-          import string
-          from datetime import datetime
-          from supabase import create_client, Client
+          node << 'EOF'
+          const { createClient } = require('@supabase/supabase-js');
           
-          def generate_random_string(length=10):
-              """Generate a random string of specified length."""
-              return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+          // Configuration
+          const config = {
+            name: "Lifeaware",
+            supabaseUrl: process.env.SUPABASE_URL,
+            supabaseKey: process.env.SUPABASE_ANON_KEY,
+            tableName: "keep-alive",
+            maxEntries: 50
+          };
           
-          def process_database(config):
-              """Process a single database configuration."""
-              name = config.get("name", "Unknown")
-              supabase_url = config.get("supabase_url")
-              supabase_key = config.get("supabase_key") 
-              table_name = config.get("table_name", "keep-alive")
-              max_entries = config.get("max_entries", 50)
-              
-              print(f"🔄 Processing database: {name}")
-              
-              if not supabase_url or not supabase_key:
-                  print(f"❌ Missing URL or key for {name}")
-                  return False
-              
-              try:
-                  # Create Supabase client
-                  supabase: Client = create_client(supabase_url, supabase_key)
-                  
-                  # Insert a new keep-alive entry
-                  random_name = f"github-action-{generate_random_string()}"
-                  insert_result = supabase.table(table_name).insert({
-                      "name": random_name
-                  }).execute()
-                  
-                  print(f"✅ Inserted entry: {random_name}")
-                  
-                  # Check current entry count
-                  count_result = supabase.table(table_name).select("id", count="exact").execute()
-                  entry_count = count_result.count
-                  
-                  print(f"📊 Total entries in {table_name}: {entry_count}")
-                  
-                  # Clean up old entries if we exceed max_entries
-                  if entry_count > max_entries:
-                      # Get oldest entries to delete
-                      entries_to_delete = entry_count - max_entries
-                      old_entries = supabase.table(table_name).select("id").order("created_at").limit(entries_to_delete).execute()
-                      
-                      if old_entries.data:
-                          ids_to_delete = [entry["id"] for entry in old_entries.data]
-                          delete_result = supabase.table(table_name).delete().in_("id", ids_to_delete).execute()
-                          print(f"🧹 Cleaned up {len(ids_to_delete)} old entries")
-                  
-                  print(f"🎉 Successfully processed {name}")
-                  return True
-                  
-              except Exception as e:
-                  print(f"❌ Error processing {name}: {str(e)}")
-                  return False
+          function generateRandomString(length = 10) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+              result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+          }
           
-          def main():
-              """Main function to process all databases."""
-              print(f"🚀 Starting Supabase Keep Alive - {datetime.now()}")
+          async function processDatabase() {
+            console.log(`🔄 Processing database: ${config.name}`);
+            console.log(`🚀 Starting Supabase Keep Alive - ${new Date().toISOString()}`);
+            
+            if (!config.supabaseUrl || !config.supabaseKey) {
+              console.log(`❌ Missing URL or key for ${config.name}`);
+              process.exit(1);
+            }
+            
+            try {
+              // Create Supabase client
+              const supabase = createClient(config.supabaseUrl, config.supabaseKey);
               
-              # Load configuration
-              try:
-                  with open('config.json', 'r') as f:
-                      databases = json.load(f)
-              except Exception as e:
-                  print(f"❌ Error loading config: {str(e)}")
-                  return
+              // Insert a new keep-alive entry
+              const randomName = `github-action-${generateRandomString()}`;
+              const { data: insertData, error: insertError } = await supabase
+                .from(config.tableName)
+                .insert({
+                  name: randomName
+                });
               
-              if not databases:
-                  print("❌ No databases configured")
-                  return
+              if (insertError) {
+                throw new Error(`Insert failed: ${insertError.message}`);
+              }
               
-              # Process each database
-              success_count = 0
-              for db_config in databases:
-                  if process_database(db_config):
-                      success_count += 1
+              console.log(`✅ Inserted entry: ${randomName}`);
               
-              print(f"\n📈 Summary: {success_count}/{len(databases)} databases processed successfully")
+              // Check current entry count
+              const { count, error: countError } = await supabase
+                .from(config.tableName)
+                .select('id', { count: 'exact', head: true });
               
-              if success_count == len(databases):
-                  print("🎉 All databases processed successfully!")
-              else:
-                  print("⚠️  Some databases failed to process")
+              if (countError) {
+                throw new Error(`Count failed: ${countError.message}`);
+              }
+              
+              console.log(`📊 Total entries in ${config.tableName}: ${count}`);
+              
+              // Clean up old entries if we exceed maxEntries
+              if (count > config.maxEntries) {
+                const entriesToDelete = count - config.maxEntries;
+                
+                // Get oldest entries to delete
+                const { data: oldEntries, error: selectError } = await supabase
+                  .from(config.tableName)
+                  .select('id')
+                  .order('created_at', { ascending: true })
+                  .limit(entriesToDelete);
+                
+                if (selectError) {
+                  throw new Error(`Select for cleanup failed: ${selectError.message}`);
+                }
+                
+                if (oldEntries && oldEntries.length > 0) {
+                  const idsToDelete = oldEntries.map(entry => entry.id);
+                  
+                  const { error: deleteError } = await supabase
+                    .from(config.tableName)
+                    .delete()
+                    .in('id', idsToDelete);
+                  
+                  if (deleteError) {
+                    throw new Error(`Delete failed: ${deleteError.message}`);
+                  }
+                  
+                  console.log(`🧹 Cleaned up ${idsToDelete.length} old entries`);
+                }
+              }
+              
+              console.log(`🎉 Successfully processed ${config.name}`);
+              console.log(`\n📈 Summary: Database processed successfully`);
+              console.log(`🎉 Keep-alive completed successfully!`);
+              
+            } catch (error) {
+              console.log(`❌ Error processing ${config.name}: ${error.message}`);
+              process.exit(1);
+            }
+          }
           
-          if __name__ == "__main__":
-              main()
+          // Run the process
+          processDatabase();
           EOF
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
       - name: Cleanup
         run: |
-          # Remove config file (security)
-          rm -f config.json
-          echo "�� Cleanup completed" 
+          echo "🧹 Cleanup completed" 
