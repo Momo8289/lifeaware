@@ -1,7 +1,6 @@
 "use client";
 
 import { Button, buttonVariants } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 import { differenceInCalendarDays } from "date-fns"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import * as React from "react"
@@ -12,6 +11,7 @@ import {
   useDayPicker,
   type DayPickerProps,
 } from "react-day-picker"
+import {concatClasses} from "@/utils/helpers";
 
 export type CalendarProps = DayPickerProps & {
   /**
@@ -84,22 +84,22 @@ function Calendar({
 
   const columnsDisplayed = navView === "years" ? 1 : numberOfMonths
 
-  const _monthsClassName = cn("relative flex", props.monthsClassName)
-  const _monthCaptionClassName = cn(
+  const _monthsClassName = concatClasses("relative flex", props.monthsClassName)
+  const _monthCaptionClassName = concatClasses(
     "relative mx-10 flex h-7 items-center justify-center",
     props.monthCaptionClassName
   )
-  const _weekdaysClassName = cn("flex flex-row", props.weekdaysClassName)
-  const _weekdayClassName = cn(
+  const _weekdaysClassName = concatClasses("flex flex-row", props.weekdaysClassName)
+  const _weekdayClassName = concatClasses(
     "w-8 text-sm font-normal text-muted-foreground",
     props.weekdayClassName
   )
-  const _monthClassName = cn("w-full", props.monthClassName)
-  const _captionClassName = cn(
+  const _monthClassName = concatClasses("w-full", props.monthClassName)
+  const _captionClassName = concatClasses(
     "relative flex items-center justify-center pt-1",
     props.captionClassName
   )
-  const _captionLabelClassName = cn(
+  const _captionLabelClassName = concatClasses(
     "truncate text-sm font-medium",
     props.captionLabelClassName
   )
@@ -108,66 +108,66 @@ function Calendar({
     className:
       "absolute h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
   })
-  const _buttonNextClassName = cn(
+  const _buttonNextClassName = concatClasses(
     buttonNavClassName,
     "right-0",
     props.buttonNextClassName
   )
-  const _buttonPreviousClassName = cn(
+  const _buttonPreviousClassName = concatClasses(
     buttonNavClassName,
     "left-0",
     props.buttonPreviousClassName
   )
-  const _navClassName = cn("flex items-start", props.navClassName)
-  const _monthGridClassName = cn("mx-auto mt-4", props.monthGridClassName)
-  const _weekClassName = cn("mt-2 flex w-max items-start", props.weekClassName)
-  const _dayClassName = cn(
+  const _navClassName = concatClasses("flex items-start", props.navClassName)
+  const _monthGridClassName = concatClasses("mx-auto mt-4", props.monthGridClassName)
+  const _weekClassName = concatClasses("mt-2 flex w-max items-start", props.weekClassName)
+  const _dayClassName = concatClasses(
     "flex size-8 flex-1 items-center justify-center p-0 text-sm",
     props.dayClassName
   )
-  const _dayButtonClassName = cn(
+  const _dayButtonClassName = concatClasses(
     buttonVariants({ variant: "ghost" }),
     "size-8 rounded-md p-0 font-normal transition-none aria-selected:opacity-100",
     props.dayButtonClassName
   )
   const buttonRangeClassName =
     "bg-accent [&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground"
-  const _rangeStartClassName = cn(
+  const _rangeStartClassName = concatClasses(
     buttonRangeClassName,
     "day-range-start rounded-s-md",
     props.rangeStartClassName
   )
-  const _rangeEndClassName = cn(
+  const _rangeEndClassName = concatClasses(
     buttonRangeClassName,
     "day-range-end rounded-e-md",
     props.rangeEndClassName
   )
-  const _rangeMiddleClassName = cn(
+  const _rangeMiddleClassName = concatClasses(
     "bg-accent !text-foreground [&>button]:bg-transparent [&>button]:!text-foreground [&>button]:hover:bg-transparent [&>button]:hover:!text-foreground",
     props.rangeMiddleClassName
   )
-  const _selectedClassName = cn(
+  const _selectedClassName = concatClasses(
     "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground",
     props.selectedClassName
   )
-  const _todayClassName = cn(
+  const _todayClassName = concatClasses(
     "[&>button]:bg-accent [&>button]:text-accent-foreground",
     props.todayClassName
   )
-  const _outsideClassName = cn(
+  const _outsideClassName = concatClasses(
     "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
     props.outsideClassName
   )
-  const _disabledClassName = cn(
+  const _disabledClassName = concatClasses(
     "text-muted-foreground opacity-50",
     props.disabledClassName
   )
-  const _hiddenClassName = cn("invisible flex-1", props.hiddenClassName)
+  const _hiddenClassName = concatClasses("invisible flex-1", props.hiddenClassName)
 
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
+      className={concatClasses("p-3", className)}
       style={{
         width: 248.8 * (columnsDisplayed ?? 1) + "px",
       }}
@@ -339,7 +339,7 @@ function Nav({
     onNextClick?.(nextMonth)
   }, [goToMonth, nextMonth])
   return (
-    <nav className={cn("flex items-center", className)}>
+    <nav className={concatClasses("flex items-center", className)}>
       <Button
         variant="outline"
         className="absolute left-0 h-7 w-7 bg-transparent p-0 opacity-80 hover:opacity-100"
@@ -462,7 +462,7 @@ function YearGrid({
   const { goToMonth, selected } = useDayPicker()
 
   return (
-    <div className={cn("grid grid-cols-4 gap-y-2", className)} {...props}>
+    <div className={concatClasses("grid grid-cols-4 gap-y-2", className)} {...props}>
       {Array.from(
         { length: displayYears.to - displayYears.from + 1 },
         (_, i) => {
@@ -482,7 +482,7 @@ function YearGrid({
           return (
             <Button
               key={i}
-              className={cn(
+              className={concatClasses(
                 "h-7 w-full text-sm font-normal text-foreground",
                 displayYears.from + i === new Date().getFullYear() &&
                   "bg-accent font-medium text-accent-foreground"

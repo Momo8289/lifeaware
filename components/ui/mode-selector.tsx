@@ -7,7 +7,8 @@ import { useAppearanceSettings } from "@/hooks/use-appearance-settings"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+
+import {concatClasses} from "@/utils/helpers";
 
 const modes = [
   {
@@ -58,7 +59,7 @@ export function ModeSelector({ className }: ModeSelectorProps) {
 
   if (!mounted) {
     return (
-      <div className={cn("space-y-4", className)}>
+      <div className={concatClasses("space-y-4", className)}>
         <div>
           <h4 className="text-sm font-medium mb-2">Mode</h4>
           <p className="text-xs text-muted-foreground">
@@ -83,7 +84,7 @@ export function ModeSelector({ className }: ModeSelectorProps) {
   }
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={concatClasses("space-y-4", className)}>
       <div>
         <h4 className="text-sm font-medium mb-2">Mode</h4>
         <p className="text-xs text-muted-foreground">
@@ -103,7 +104,7 @@ export function ModeSelector({ className }: ModeSelectorProps) {
           return (
             <Card
               key={mode.value}
-              className={cn(
+              className={concatClasses(
                 "cursor-pointer transition-all hover:ring-2 hover:ring-ring",
                 isSelected && "ring-2 ring-ring"
               )}

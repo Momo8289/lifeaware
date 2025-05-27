@@ -26,8 +26,8 @@ import {
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useCurrentUserName } from "@/hooks/use-current-user-name"
-import { supabase } from "@/lib/supabase/client"
-import { createRobustSubscription } from "@/lib/supabase/realtime"
+import { supabase } from "@/utils/supabase/client"
+import { createRobustSubscription } from "@/utils/supabase/realtime"
 
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"

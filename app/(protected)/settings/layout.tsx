@@ -6,7 +6,8 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { cn } from "@/lib/utils"
+
+import {concatClasses} from "@/utils/helpers";
 
 const sidebarNavItems = [
   {
@@ -58,7 +59,7 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={cn(
+                    className={concatClasses(
                       "flex items-center rounded-md px-3 py-2 text-sm font-medium",
                       pathname === item.href
                         ? "bg-accent text-accent-foreground"
