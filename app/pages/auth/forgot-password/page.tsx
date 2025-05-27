@@ -9,7 +9,7 @@ import ForgotPasswordForm from "./forgot-password-form";
 export default function ForgotPassword() {
   return (
     <AuthLayout>
-      <Link href="/" className="flex items-center gap-2 font-medium hover:text-primary transition-colors mb-4">
+      <Link href="/public" className="flex items-center gap-2 font-medium hover:text-primary transition-colors mb-4">
         <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
           <HeartPulse className="size-4" />
         </div>
