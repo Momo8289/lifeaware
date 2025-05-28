@@ -17,14 +17,14 @@ export function SiteHeader() {
   // Generate breadcrumb segments based on the current path
   const generateBreadcrumbs = (useClientStorage = false) => {
     // Special case for settings pages
-    if (pathname.startsWith("/settings") || pathname.includes("/protected/settings")) {
+    if (pathname.startsWith("/settings") || pathname.includes("/(protected)/settings")) {
       // Create breadcrumbs for settings pages
       const breadcrumbs = [
         { title: "Settings", href: "/settings" }
       ]
       
       // Check if we're in a specific settings section
-      if (pathname !== "/settings" && !pathname.endsWith("/protected/settings")) {
+      if (pathname !== "/settings" && !pathname.endsWith("/(protected)/settings")) {
         // Get the last segment of the path
         const segments = pathname.split('/')
         const lastSegment = segments[segments.length - 1]
@@ -44,7 +44,7 @@ export function SiteHeader() {
     
     // For non-settings pages, generate breadcrumbs from the path
     const pathSegments = pathname.split('/').filter(segment => 
-      segment && segment !== 'protected'
+      segment && segment !== '(protected)'
     )
     
     // Generate breadcrumb items
@@ -80,7 +80,7 @@ export function SiteHeader() {
   useEffect(() => {
     const fetchEntityNames = async () => {
       const pathSegments = pathname.split('/').filter(segment => 
-        segment && segment !== 'protected'
+        segment && segment !== '(protected)'
       );
       
       const uuidSegments = pathSegments.filter(segment => 

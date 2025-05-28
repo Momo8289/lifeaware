@@ -20,7 +20,7 @@ export default function SignInPage() {
   
   return (
     <AuthLayout>
-      <Link href="/public" className="flex items-center gap-2 font-medium hover:text-primary transition-colors mb-4">
+      <Link href="/" className="flex items-center gap-2 font-medium hover:text-primary transition-colors mb-4">
         <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
           <HeartPulse className="size-4" />
         </div>
