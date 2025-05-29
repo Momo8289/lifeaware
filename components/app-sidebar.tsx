@@ -160,13 +160,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         
         // Fetch initial count
         fetchReminderCount();
-        
+
         // Listen for the custom refresh event
-        const handleRefreshReminders = () => {
-          fetchReminderCount();
-        };
-        
-        window.addEventListener('refresh-reminders', handleRefreshReminders);
+        window.addEventListener('refresh-reminders', fetchReminderCount);
 
         // Set up robust subscription with our new helper
         // TODO: createRobustSubscription doesn't actually return a cleanup function.
@@ -181,7 +177,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         // Update cleanup to include event listener and interval
         const originalCleanup = cleanupFunction;
         cleanupFunction = () => {
-          window.removeEventListener('refresh-reminders', handleRefreshReminders);
+          window.removeEventListener('refresh-reminders', fetchReminderCount);
           if (originalCleanup) originalCleanup();
         };
       } catch (err) {
