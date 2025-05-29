@@ -106,11 +106,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     avatar: ""
   })
   const [reminderCount, setReminderCount] = React.useState<number>(0)
-  
+
   React.useEffect(() => {
     async function getUserData() {
       const { data: { user: authUser } } = await supabase.auth.getUser()
-      
+
       if (authUser) {
         setUser({
           name: authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || 'User',
@@ -119,10 +119,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         })
       }
     }
-    
+
     getUserData()
   }, [])
-  
+
   // Fetch the count of active reminders
   React.useEffect(() => {
     let cleanupFunction: (() => void) | undefined;
@@ -169,6 +169,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         window.addEventListener('refresh-reminders', handleRefreshReminders);
 
         // Set up robust subscription with our new helper
+        // TODO: createRobustSubscription doesn't actually return a cleanup function.
         cleanupFunction = createRobustSubscription(
           supabase,
           user.id,
@@ -178,6 +179,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         );
         
         // Add manual refresh interval as a fallback
+        // TODO: Remove this interval, not needed
         const intervalId = setInterval(fetchReminderCount, 30000);
         
         // Update cleanup to include event listener and interval
@@ -191,26 +193,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         // Silent error handling for production
       }
     };
-    
+
     // Start the authentication check and listener setup
     checkAuthAndSetupListeners();
-    
+
     // Return cleanup function
     return () => {
       if (cleanupFunction) cleanupFunction();
     };
   }, [pathname]);
-  
+
   // Create a new array with isActive property set based on current path
   const navMainWithActive = React.useMemo(() => {
     return data.navMain.map(item => ({
       ...item,
-      isActive: item.title === "Habits" 
+      isActive: item.title === "Habits"
         ? pathname === item.url || pathname.startsWith(`${item.url}/`)
         : pathname === item.url
     }))
   }, [pathname])
-  
+
   // Create navSecondary with isActive for settings pages and update reminder badge
   const navSecondaryWithActive = React.useMemo(() => {
     return data.navSecondary.map(item => {
@@ -221,16 +223,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           isActive: pathname === item.url || pathname.startsWith(`${item.url}/`)
         };
       }
-      
+
       return {
         ...item,
-        isActive: item.title === "Settings" 
-          ? pathname === "/settings" || pathname.startsWith("/settings/") 
+        isActive: item.title === "Settings"
+          ? pathname === "/settings" || pathname.startsWith("/settings/")
           : pathname === item.url
       };
     });
   }, [pathname, reminderCount]);
-  
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
