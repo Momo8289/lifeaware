@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/utils/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,14 +24,14 @@ import {
 import Link from 'next/link';
 import { format, isToday, isYesterday, parseISO, subYears, addMonths, startOfToday } from 'date-fns';
 import * as React from 'react';
-import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { HabitProgressChart } from '@/components/habits/HabitProgressChart';
 import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
 import { Progress } from '@/components/ui/progress';
-import { useUserTimezone } from '@/lib/hooks/useUserTimezone';
-import { getTodayInTimezone, formatDateInTimezone } from '@/lib/utils/timezone';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { getTodayInTimezone, formatDateInTimezone } from '@/utils/timezone';
+import {concatClasses} from "@/utils/helpers";
 
 // Custom styles for the heatmap grid
 const styles = `
