@@ -11,10 +11,6 @@ export function SettingsApplier() {
   const didInit = useRef(false)
 
   // Apply display mode to next-themes
-/*  useEffect(() => {
-    if (isLoading) return
-    setTheme(settings.displayMode)
-  }, [settings.displayMode, setTheme, isLoading]) */
     useEffect(() => {
       if (isLoading || didInit.current) return
       if (settings.displayMode && typeof setTheme === "function") {
