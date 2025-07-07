@@ -10,10 +10,20 @@ export function SettingsApplier() {
   const { setTheme, resolvedTheme } = useTheme()
 
   // Apply display mode to next-themes
-  useEffect(() => {
+/*  useEffect(() => {
     if (isLoading) return
     setTheme(settings.displayMode)
-  }, [settings.displayMode, setTheme, isLoading])
+  }, [settings.displayMode, setTheme, isLoading]) */
+    useEffect(() => {
+      if (isLoading) return
+      if (
+        settings.displayMode &&
+        settings.displayMode !== resolvedTheme &&
+        typeof setTheme === "function"
+      ) {
+        setTheme(settings.displayMode)
+      }
+    }, [settings.displayMode, resolvedTheme, setTheme, isLoading])
 
   // Apply font size when settings change
   useEffect(() => {
