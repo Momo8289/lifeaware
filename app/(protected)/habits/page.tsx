@@ -76,7 +76,7 @@ export default function HabitsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        // Silent error handling for production
+        console.warn('User not authenticated, clearing habits');
         setHabits([]);
         setIsLoading(false);
         return;
@@ -139,7 +139,8 @@ export default function HabitsPage() {
               streakData = result.streak || 0;
             }
           } catch (error) {
-            // Silent error handling, use default value of 0
+            console.warn('Failed to fetch streak data for habit:', habit.id, error);
+            // Use default value of 0
           }
           
           // Calculate total days since habit creation
@@ -174,7 +175,12 @@ export default function HabitsPage() {
 
       setHabits(habitsWithStats);
     } catch (error) {
-      // Silent error handling for production
+      console.error('Error fetching habits:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load habits",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -304,7 +310,7 @@ export default function HabitsPage() {
         duration: 3000,
       });
     } catch (error) {
-      // Silent error handling for production
+      console.error('Error updating habit status:', error);
       toast({
         title: "Update failed",
         description: "Failed to update habit status",
@@ -472,4 +478,4 @@ function StatsCard({ title, value, icon }: { title: string; value: string; icon:
       </CardContent>
     </Card>
   );
-} 
+}

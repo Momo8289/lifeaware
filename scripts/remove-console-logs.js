@@ -36,24 +36,45 @@ function processFile(filePath) {
   let content = fs.readFileSync(filePath, 'utf8');
   let modified = false;
   
-  // Replace console.log statements
-  const logRegex = /(console\.log\([^)]*\);?)/g;
+  // Only remove console.log statements (not console.error, console.warn, etc.)
+  // This regex is more specific to avoid removing important logging
+  const logRegex = /console\.log\s*\([^)]*\)\s*;?/g;
   if (logRegex.test(content)) {
-    content = content.replace(logRegex, '// Removed console.log');
+    content = content.replace(logRegex, '// Development log removed');
     modified = true;
   }
   
-  // Replace console.error statements with silent error handling
-  const errorRegex = /console\.error\([^)]*\);?/g;
-  if (errorRegex.test(content)) {
-    content = content.replace(errorRegex, '// Silent error handling for production');
-    modified = true;
-  }
+  // DO NOT remove console.error - these are important for debugging
+  // Instead, you could optionally replace them with a proper logging service
+  // Example (commented out):
+  // const errorRegex = /console\.error\s*\(/g;
+  // content = content.replace(errorRegex, 'logger.error(');
   
   // Write changes to file
   if (modified) {
     fs.writeFileSync(filePath, content, 'utf8');
-    // Removed console.log
+    console.log(`Processed: ${filePath}`);
+    return true;
+  }
+  
+  return false;
+}
+
+// Function to restore files that were incorrectly modified
+function restoreErrorHandling(filePath) {
+  let content = fs.readFileSync(filePath, 'utf8');
+  let modified = false;
+  
+  // Restore the silent error handling comments with proper error handling
+  const silentErrorRegex = /\/\/ Silent error handling for production/g;
+  if (silentErrorRegex.test(content)) {
+    content = content.replace(silentErrorRegex, 'console.error("Error:", error)');
+    modified = true;
+  }
+  
+  if (modified) {
+    fs.writeFileSync(filePath, content, 'utf8');
+    console.log(`Restored error handling in: ${filePath}`);
     return true;
   }
   
@@ -62,7 +83,14 @@ function processFile(filePath) {
 
 // Main function
 function main() {
-  // Removed console.log
+  const args = process.argv.slice(2);
+  const shouldRestore = args.includes('--restore');
+  
+  if (shouldRestore) {
+    console.log('Restoring error handling in files...');
+  } else {
+    console.log('Removing console.log statements...');
+  }
   
   // Get all files
   const rootDir = path.resolve(__dirname, '..');
@@ -72,11 +100,11 @@ function main() {
   
   // Process each file
   files.forEach(file => {
-    const wasModified = processFile(file);
+    const wasModified = shouldRestore ? restoreErrorHandling(file) : processFile(file);
     if (wasModified) modifiedCount++;
   });
   
-  // Removed console.log
+  console.log(`Modified ${modifiedCount} files`);
 }
 
-main(); 
+main();

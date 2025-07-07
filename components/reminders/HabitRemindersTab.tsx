@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BellIcon, CalendarDays, Clock, PlusIcon } from "lucide-react";
+import { BellIcon, CalendarDays, Clock, PlusIcon, AlertCircle } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { format, addDays, isSameDay } from "date-fns";
 
@@ -24,6 +24,7 @@ interface Habit {
 export function HabitRemindersTab() {
   const [upcomingHabits, setUpcomingHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUpcomingHabits();
@@ -32,12 +33,15 @@ export function HabitRemindersTab() {
   const fetchUpcomingHabits = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       
       // Get current user to ensure we're authenticated
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        // Silent error handling for production
+        // User not authenticated
+        console.warn('User not authenticated when fetching habit reminders');
+        setError('Please sign in to view your habit reminders');
         setUpcomingHabits([]);
         setIsLoading(false);
         return;
@@ -85,6 +89,15 @@ export function HabitRemindersTab() {
       setUpcomingHabits(upcoming);
     } catch (error) {
       // Silent error handling for production
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(`Failed to load habits: ${errorMessage}`);
+      
+      // Show user-friendly toast notification
+      toast({
+        title: "Failed to load habits",
+        description: "There was a problem loading your habit reminders. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -134,12 +147,45 @@ export function HabitRemindersTab() {
     return 'Unknown';
   };
 
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Habits Needing Reminders</h2>
+          <Button variant="outline" onClick={fetchUpcomingHabits} disabled={isLoading}>
+            {isLoading ? "Loading..." : "Refresh"}
+          </Button>
+        </div>
+        
+        <Card>
+          <CardContent className="py-12 text-center space-y-4">
+            <div className="mx-auto bg-red-100 rounded-full w-12 h-12 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium text-red-600">Unable to load habits</h3>
+              <p className="text-muted-foreground mt-1">{error}</p>
+              <Button 
+                onClick={fetchUpcomingHabits} 
+                className="mt-4"
+                disabled={isLoading}
+              >
+                {isLoading ? "Retrying..." : "Try Again"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Habits Needing Reminders</h2>
         <Button variant="outline" onClick={fetchUpcomingHabits} disabled={isLoading}>
-          Refresh
+          {isLoading ? "Loading..." : "Refresh"}
         </Button>
       </div>
       
@@ -207,4 +253,4 @@ export function HabitRemindersTab() {
       )}
     </div>
   );
-} 
+}

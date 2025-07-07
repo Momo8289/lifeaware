@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (error) {
       // Don't fail the habit completion if reminder update fails
-      console.error('Failed to update reminders:', error);
+      // Silent error handling for production
     }
 
     return NextResponse.json({ 
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error updating habit completion:', error);
+    // Silent error handling for production
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

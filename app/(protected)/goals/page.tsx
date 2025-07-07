@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusIcon, Target, Timer, CalendarClock, LineChart, Trophy } from 'lucide-react';
+import { PlusIcon, Target, Timer, CalendarClock, LineChart, Trophy, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 
 // Types
@@ -38,17 +39,19 @@ export default function GoalsPage() {
   const [goals, setGoals] = useState<GoalWithStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchGoals = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         
         // Get current user to ensure we're authenticated
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          // Silent error handling for production
+          setError('Please log in to view your goals');
           setGoals([]);
           setIsLoading(false);
           return;
@@ -104,6 +107,7 @@ export default function GoalsPage() {
         setGoals(goalsWithStats);
       } catch (error) {
         // Silent error handling for production
+        setError('Failed to load goals. Please try again.');
       } finally {
         setIsLoading(false);
       }
@@ -133,6 +137,13 @@ export default function GoalsPage() {
           </Button>
         </Link>
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-6 md:grid-cols-4">
         <StatsCard 
@@ -280,4 +291,4 @@ function GoalCard({ goal }: { goal: GoalWithStats }) {
       </div>
     </Card>
   );
-} 
+}

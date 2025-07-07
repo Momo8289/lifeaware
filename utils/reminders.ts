@@ -66,13 +66,17 @@ export async function checkAndUpdateReminders(userTimezone: string) {
     for (const reminder of reminders || []) {
       // For habit-related reminders, check if habit was completed today
       if (reminder.habit_id && reminder.habits) {
-        const { data: todayLog } = await supabase
+        const { data: todayLog, error: logError } = await supabase
           .from('habit_logs')
           .select('status')
           .eq('habit_id', reminder.habit_id)
           .eq('completion_date', today)
           .eq('status', 'completed')
           .maybeSingle();
+
+        if (logError) {
+          console.warn('Error checking habit logs for reminder:', reminder.id, logError);
+        }
 
         // If habit is already completed today, don't show reminder
         if (todayLog) {
@@ -206,4 +210,4 @@ export async function getAllActiveReminders() {
     console.error('Error fetching all active reminders:', error);
     return { success: false, error: 'Failed to fetch active reminders' };
   }
-} 
+}

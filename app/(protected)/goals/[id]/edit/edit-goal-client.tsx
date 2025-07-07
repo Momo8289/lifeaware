@@ -94,11 +94,24 @@ export default function EditGoalForm({ goalId }: EditGoalFormProps) {
           is_active: data.is_active,
           is_completed: data.is_completed,
         });
-      } catch (error) {
+      } catch (error: any) {
         // Silent error handling for production
+        
+        let errorMessage = "Failed to load goal details";
+        
+        if (error?.message) {
+          if (error.message.includes('not found') || error.message.includes('No rows')) {
+            errorMessage = "Goal not found. It may have been deleted.";
+          } else if (error.message.includes('auth')) {
+            errorMessage = "Please log in to view this goal.";
+          } else if (error.message.includes('network') || error.message.includes('fetch')) {
+            errorMessage = "Network error. Please check your connection.";
+          }
+        }
+        
         toast({
           title: "Error",
-          description: "Failed to load goal details",
+          description: errorMessage,
           variant: "destructive"
         });
         router.push('/goals');
@@ -177,11 +190,27 @@ export default function EditGoalForm({ goalId }: EditGoalFormProps) {
       router.push(`/goals/${goalId}`);
     } catch (error: any) {
       // Silent error handling for production
+      
+      // Provide user-friendly error messages
+      let errorMessage = "Failed to update goal. Please try again.";
+      
+      if (error?.message) {
+        if (error.message.includes('auth')) {
+          errorMessage = "Please log in to update this goal.";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else if (error.message.includes('validation')) {
+          errorMessage = "Please check your inputs and try again.";
+        } else if (error.message.includes('not found')) {
+          errorMessage = "Goal not found. It may have been deleted.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: typeof error === 'object' && error.message 
-          ? error.message 
-          : "Failed to update goal. Please check your inputs and try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -356,4 +385,4 @@ export default function EditGoalForm({ goalId }: EditGoalFormProps) {
       </form>
     </div>
   );
-} 
+}

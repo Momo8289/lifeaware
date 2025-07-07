@@ -167,6 +167,7 @@ export function SiteHeader() {
         }
       } catch (error) {
         // Silent error handling for production
+        // Continue without names if fetch fails
       }
     };
     

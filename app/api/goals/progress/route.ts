@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ progress_percentage: progressPercentage });
   } catch (error) {
-    console.error('Error calculating goal progress:', error);
+    // Silent error handling for production
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

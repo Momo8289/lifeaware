@@ -123,7 +123,7 @@ serve(async (req: Request) => {
       }
     );
   } catch (error) {
-    console.error('Error during user deletion:', error);
+    // Silent error handling for production
     
     return new Response(
       JSON.stringify({

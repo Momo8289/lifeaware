@@ -70,8 +70,8 @@ export function ReminderProvider({ children }: ReminderProviderProps) {
         setAllActiveReminders(result.reminders);
       }
     } catch (error) {
-      console.error('Error refreshing all active reminders:', error);
-    }
+  console.error(error); // Automatically added
+}
   }, [timezoneLoading, timezone]);
 
   const checkReminders = React.useCallback(async () => {
@@ -115,8 +115,8 @@ export function ReminderProvider({ children }: ReminderProviderProps) {
         }
       }
     } catch (error) {
-      console.error('Error checking reminders:', error);
-    } finally {
+  console.error(error); // Automatically added
+} finally {
       setIsCheckingReminders(false);
     }
   }, [timezoneLoading, timezone, isCheckingReminders, refreshAllActiveReminders]);
@@ -195,7 +195,7 @@ export function ReminderProvider({ children }: ReminderProviderProps) {
         duration: 3000,
       });
     } catch (error) {
-      console.error('Error dismissing reminder:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: "Failed to dismiss reminder",
@@ -248,7 +248,7 @@ export function ReminderProvider({ children }: ReminderProviderProps) {
         duration: 3000,
       });
     } catch (error) {
-      console.error('Error completing habit:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: "Failed to mark habit as completed",

@@ -37,7 +37,7 @@ export function useCurrentUserImage() {
             }
           }
         } catch (error) {
-          // Silent error handling for production
+          console.error('Error fetching user avatar from storage:', error)
         }
       }
     }
@@ -55,4 +55,4 @@ export function useCurrentUserImage() {
   }, [])
   
   return avatarUrl
-} 
+}

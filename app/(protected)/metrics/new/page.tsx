@@ -312,4 +312,4 @@ export default function NewMetricPage() {
       </form>
     </div>
   );
-} 
+}

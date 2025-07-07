@@ -184,11 +184,16 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
           }
         }
       } catch (error) {
-        // Silent error handling
-      }
+  console.error(error); // Automatically added
+}
 
     } catch (error: any) {
       // Silent error handling for production
+      toast({
+        title: "Error",
+        description: "Failed to load habit data. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -616,4 +621,4 @@ function StatCard({ title, value, icon }: { title: string; value: string; icon: 
       </CardContent>
     </Card>
   );
-} 
+}

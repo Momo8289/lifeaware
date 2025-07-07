@@ -13,7 +13,18 @@ export default function ErrorPage({
 }) {
   useEffect(() => {
     // Log the error to an error reporting service
-    // Silent error handling for production
+    // Silent error handling for production.toISOString(),
+    });
+
+    // TODO: Send to error tracking service (e.g., Sentry, LogRocket, etc.)
+    // Example:
+    // if (typeof window !== 'undefined' && window.analytics) {
+    //   window.analytics.track('Application Error', {
+    //     error: error.message,
+    //     digest: error.digest,
+    //     stack: error.stack,
+    //   });
+    // }
   }, [error]);
 
   return (
@@ -30,4 +41,4 @@ export default function ErrorPage({
       </div>
     </div>
   );
-} 
+}

@@ -141,6 +141,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         setReminderCount(count || 0);
       } catch (error) {
         // Silent error handling for production
+        // Set to 0 on error to prevent UI issues
+        setReminderCount(0);
       }
     };
 
@@ -181,8 +183,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           if (originalCleanup) originalCleanup();
         };
       } catch (err) {
-        // Silent error handling for production
-      }
+  console.error(err); // Automatically added
+}
     };
 
     // Start the authentication check and listener setup

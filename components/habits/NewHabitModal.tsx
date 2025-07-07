@@ -84,7 +84,7 @@ export function NewHabitModal({ open, onOpenChange, onHabitCreated }: NewHabitMo
         .order('name');
 
       if (error) {
-        console.error('Error fetching categories:', error);
+        // Silent error handling for production
         // Fallback to default categories
         const fallbackCategories = [
           { id: '1', name: 'Health', color: '#10B981', is_default: true },
@@ -107,7 +107,7 @@ export function NewHabitModal({ open, onOpenChange, onHabitCreated }: NewHabitMo
 
       setCategories(filteredCategories);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      // Silent error handling for production
       // Fallback to default categories
       const fallbackCategories = [
         { id: '1', name: 'Health', color: '#10B981', is_default: true },

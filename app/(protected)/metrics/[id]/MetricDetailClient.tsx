@@ -93,7 +93,7 @@ export default function MetricDetailClient({ id }: { id: string }) {
       // Fetch logs based on time range
       await fetchLogs();
     } catch (error) {
-      // Silent error handling for production
+      console.error('Error fetching metric data:', error);
       toast({
         title: "Error",
         description: "Failed to load metric data",
@@ -137,7 +137,12 @@ export default function MetricDetailClient({ id }: { id: string }) {
       
       setLogs(logsData || []);
     } catch (error) {
-      // Silent error handling for production
+      console.error('Error fetching logs:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to load measurement logs",
+        variant: "destructive"
+      });
     }
   };
 
@@ -232,7 +237,7 @@ export default function MetricDetailClient({ id }: { id: string }) {
       // Refresh logs
       fetchLogs();
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Error logging measurement:', error);
       toast({
         title: "Error",
         description: typeof error === 'object' && error.message 
@@ -262,7 +267,7 @@ export default function MetricDetailClient({ id }: { id: string }) {
       // Refresh logs
       fetchLogs();
     } catch (error) {
-      // Silent error handling for production
+      console.error('Error deleting log entry:', error);
       toast({
         title: "Error",
         description: "Failed to delete log entry",
@@ -293,7 +298,7 @@ export default function MetricDetailClient({ id }: { id: string }) {
       
       router.push('/metrics');
     } catch (error) {
-      // Silent error handling for production
+      console.error('Error deleting metric:', error);
       toast({
         title: "Error",
         description: "Failed to delete metric",
@@ -833,4 +838,4 @@ export default function MetricDetailClient({ id }: { id: string }) {
       </Tabs>
     </div>
   );
-} 
+}

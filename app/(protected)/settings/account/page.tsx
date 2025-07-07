@@ -96,44 +96,59 @@ export default function AccountPage() {
 
   useEffect(() => {
     async function loadUserAndProfile() {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        router.replace("/sign-in")
-        return
-      }
-      
-      setUser(user)
-      
-      // Fetch profile data
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
         
-      if (error && error.code !== 'PGRST116') {
-        // Silent error handling for production
-      }
-      
-      setProfile(profileData || null)
-      
-      // Set form values
-      form.setValue("email", user.email || "")
-      // Set display name from auth.users metadata if available
-      if (user.user_metadata && user.user_metadata.display_name) {
-        form.setValue("display_name", user.user_metadata.display_name)
-      }
-      
-      if (profileData) {
-        if (profileData.date_of_birth) {
-          form.setValue("date_of_birth", profileData.date_of_birth)
+        if (!user) {
+          router.replace("/sign-in")
+          return
         }
-        form.setValue("timezone", profileData.timezone || "UTC")
-        form.setValue("unit_system", profileData.unit_system || "metric")
+        
+        setUser(user)
+        
+        // Fetch profile data
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+          
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching profile data:', error);
+          toast({
+            title: "Warning",
+            description: "Could not load some profile data",
+            variant: "destructive"
+          });
+        }
+        
+        setProfile(profileData || null)
+        
+        // Set form values
+        form.setValue("email", user.email || "")
+        // Set display name from auth.users metadata if available
+        if (user.user_metadata && user.user_metadata.display_name) {
+          form.setValue("display_name", user.user_metadata.display_name)
+        }
+        
+        if (profileData) {
+          if (profileData.date_of_birth) {
+            form.setValue("date_of_birth", profileData.date_of_birth)
+          }
+          form.setValue("timezone", profileData.timezone || "UTC")
+          form.setValue("unit_system", profileData.unit_system || "metric")
+        }
+        
+        setLoading(false)
+      } catch (error) {
+        console.error('Error loading user and profile:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load account data",
+          variant: "destructive"
+        });
+        setLoading(false)
       }
-      
-      setLoading(false)
     }
     
     loadUserAndProfile()
@@ -183,7 +198,7 @@ export default function AccountPage() {
         .map((result: any) => result.reason)
       
       if (errors.length > 0) {
-        // Silent error handling for production
+        console.error('Errors updating account:', errors);
         throw errors[0]
       }
       
@@ -192,7 +207,7 @@ export default function AccountPage() {
         description: "Your account information has been updated successfully.",
       })
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Error updating account:', error);
       toast({
         title: "Error updating account",
         description: error.message || "Something went wrong. Please try again.",
@@ -205,15 +220,20 @@ export default function AccountPage() {
   }
 
   async function handleEmailChange(newEmail: string) {
-    setEmailChangeLoading(true)
-    const { error } = await supabase.auth.updateUser({ email: newEmail })
-    
-    if (error) throw error
-    
-    toast({
-      title: "Email verification sent",
-      description: `We've sent a verification link to ${newEmail}. Please check your inbox.`,
-    })
+    try {
+      setEmailChangeLoading(true)
+      const { error } = await supabase.auth.updateUser({ email: newEmail })
+      
+      if (error) throw error
+      
+      toast({
+        title: "Email verification sent",
+        description: `We've sent a verification link to ${newEmail}. Please check your inbox.`,
+      })
+    } catch (error: any) {
+      console.error('Error changing email:', error);
+      throw error;
+    }
   }
 
   async function deleteAccount() {
@@ -254,7 +274,7 @@ export default function AccountPage() {
         handleAccountDeletion();
       }, 1000)
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Error deleting account:', error);
       toast({
         title: "Error deleting account",
         description: error.message || "Something went wrong. Please try again.",
@@ -538,4 +558,4 @@ export default function AccountPage() {
       </div>
     </div>
   )
-} 
+}

@@ -134,11 +134,26 @@ export default function NewGoalPage() {
       router.push('/goals');
     } catch (error: any) {
       // Silent error handling for production
+      
+      // Provide user-friendly error messages
+      let errorMessage = "Failed to create goal. Please try again.";
+      
+      if (error?.message) {
+        // Handle specific error cases
+        if (error.message.includes('auth')) {
+          errorMessage = "Please log in to create goals.";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else if (error.message.includes('validation')) {
+          errorMessage = "Please check your inputs and try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: typeof error === 'object' && error.message 
-          ? error.message 
-          : "Failed to create goal. Please check your inputs and try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -314,4 +329,4 @@ export default function NewGoalPage() {
       </form>
     </div>
   );
-} 
+}

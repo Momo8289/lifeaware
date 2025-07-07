@@ -255,4 +255,4 @@ export function AvatarUpload() {
       </div>
     </div>
   )
-} 
+}

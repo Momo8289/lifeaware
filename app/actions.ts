@@ -18,23 +18,28 @@ export const signUpAction = async (formData: FormData) => {
     );
   }
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${getURL()}auth/callback`,
-    },
-  });
+  try {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${getURL()}auth/callback`,
+      },
+    });
 
-  if (error) {
-    // Silent error handling for production
-    return encodedRedirect("error", "/sign-up", error.message);
-  } else {
-    return encodedRedirect(
-      "success",
-      "/sign-up",
-      "Thanks for signing up! Please check your email for a verification link.",
-    );
+    if (error) {
+      console.error('Sign up error:', error);
+      return encodedRedirect("error", "/sign-up", error.message);
+    } else {
+      return encodedRedirect(
+        "success",
+        "/sign-up",
+        "Thanks for signing up! Please check your email for a verification link.",
+      );
+    }
+  } catch (error) {
+    console.error('Unexpected error during sign up:', error);
+    return encodedRedirect("error", "/sign-up", "An unexpected error occurred");
   }
 };
 
@@ -43,16 +48,22 @@ export const signInAction = async (formData: FormData) => {
   const password = formData.get("password") as string;
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  try {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (error) {
-    return encodedRedirect("error", "/sign-in", error.message);
+    if (error) {
+      console.error('Sign in error:', error);
+      return encodedRedirect("error", "/sign-in", error.message);
+    }
+
+    return redirect("/protected");
+  } catch (error) {
+    console.error('Unexpected error during sign in:', error);
+    return encodedRedirect("error", "/sign-in", "An unexpected error occurred");
   }
-
-  return redirect("/protected");
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {
@@ -63,28 +74,37 @@ export const forgotPasswordAction = async (formData: FormData) => {
     return encodedRedirect("error", "/forgot-password", "Email is required");
   }
 
-  // Use Supabase's built-in password reset flow
-  // The user will get an email with a link to reset their password
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    // This will direct users back to your app after they set their password in Supabase's UI
-    redirectTo: `${getURL()}auth/callback`,
-  });
+  try {
+    // Use Supabase's built-in password reset flow
+    // The user will get an email with a link to reset their password
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      // This will direct users back to your app after they set their password in Supabase's UI
+      redirectTo: `${getURL()}auth/callback`,
+    });
 
-  if (error) {
-    // Silent error handling for production
+    if (error) {
+      console.error('Password reset error:', error);
+      return encodedRedirect(
+        "error",
+        "/forgot-password",
+        "Could not reset password",
+      );
+    }
+
+    // Provide feedback that the email has been sent
     return encodedRedirect(
-      "error",
+      "success",
       "/forgot-password",
-      "Could not reset password",
+      "Check your email for a password reset link.",
+    );
+  } catch (error) {
+    console.error('Unexpected error during password reset:', error);
+    return encodedRedirect(
+      "error", 
+      "/forgot-password",
+      "An unexpected error occurred"
     );
   }
-
-  // Provide feedback that the email has been sent
-  return encodedRedirect(
-    "success",
-    "/forgot-password",
-    "Check your email for a password reset link.",
-  );
 };
 
 export const resetPasswordAction = async (formData: FormData) => {
@@ -109,19 +129,29 @@ export const resetPasswordAction = async (formData: FormData) => {
     );
   }
 
-  const { error } = await supabase.auth.updateUser({
-    password: password,
-  });
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: password,
+    });
 
-  if (error) {
+    if (error) {
+      console.error('Password update error:', error);
+      encodedRedirect(
+        "error",
+        "/protected/reset-password",
+        "Password update failed",
+      );
+    }
+
+    encodedRedirect("success", "/protected/reset-password", "Password updated");
+  } catch (error) {
+    console.error('Unexpected error during password update:', error);
     encodedRedirect(
       "error",
-      "/protected/reset-password",
-      "Password update failed",
+      "/protected/reset-password", 
+      "An unexpected error occurred"
     );
   }
-
-  encodedRedirect("success", "/protected/reset-password", "Password updated");
 };
 
 export const signOutAction = async () => {

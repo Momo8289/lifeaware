@@ -62,7 +62,7 @@ export default function MetricsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        // Silent error handling for production
+        console.error('User not authenticated');
         setMetrics([]);
         setIsLoading(false);
         return;
@@ -110,7 +110,8 @@ export default function MetricsPage() {
             trendData = result.trend || 'unknown';
           }
         } catch (error) {
-          // Silent error handling, use default value of 'unknown'
+          console.error('Error fetching trend data:', error);
+          // Use default value of 'unknown'
         }
         
         // Get count of logs
@@ -129,7 +130,12 @@ export default function MetricsPage() {
 
       setMetrics(metricsWithStats);
     } catch (error) {
-      // Silent error handling for production
+      console.error('Error fetching metrics:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load metrics. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -381,4 +387,4 @@ function MetricCard({ metric }: { metric: MetricWithStats }) {
       </Card>
     </Link>
   );
-} 
+}

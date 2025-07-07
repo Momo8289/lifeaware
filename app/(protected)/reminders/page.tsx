@@ -25,6 +25,7 @@ export default function RemindersPage() {
   const [activeTab, setActiveTab] = useState('active');
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReminders();
@@ -33,12 +34,15 @@ export default function RemindersPage() {
   const fetchReminders = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       
       // Get current user to ensure we're authenticated
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        // Silent error handling for production
+        // User not authenticated - redirect to login or show auth error
+        console.warn('User not authenticated when fetching reminders');
+        setError('Please sign in to view your reminders');
         setReminders([]);
         setIsLoading(false);
         return;
@@ -55,6 +59,15 @@ export default function RemindersPage() {
       setReminders(data || []);
     } catch (error) {
       // Silent error handling for production
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(`Failed to load reminders: ${errorMessage}`);
+      
+      // Show user-friendly toast notification
+      toast({
+        title: "Failed to load reminders",
+        description: "There was a problem loading your reminders. Please try refreshing the page.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -86,9 +99,11 @@ export default function RemindersPage() {
       });
     } catch (error) {
       // Silent error handling for production
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      
       toast({
         title: "Failed to update reminder",
-        description: "An error occurred while updating the reminder status",
+        description: `Unable to update reminder status: ${errorMessage}`,
         variant: "destructive"
       });
     }
@@ -102,6 +117,39 @@ export default function RemindersPage() {
   const dueToday = activeReminders.filter(r => isToday(new Date(r.due_date))).length;
   const overdue = activeReminders.filter(r => isPast(new Date(r.due_date)) && !isToday(new Date(r.due_date))).length;
   const upcoming = activeReminders.filter(r => !isPast(new Date(r.due_date)) || isToday(new Date(r.due_date))).length;
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="container py-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Reminders</h1>
+            <p className="text-muted-foreground">Manage your reminders and notifications</p>
+          </div>
+        </div>
+        
+        <Card>
+          <CardContent className="py-12 text-center space-y-4">
+            <div className="mx-auto bg-red-100 rounded-full w-12 h-12 flex items-center justify-center">
+              <BellIcon className="h-6 w-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium text-red-600">Unable to load reminders</h3>
+              <p className="text-muted-foreground mt-1">{error}</p>
+              <Button 
+                onClick={fetchReminders} 
+                className="mt-4"
+                disabled={isLoading}
+              >
+                {isLoading ? "Retrying..." : "Try Again"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-6 space-y-6">
@@ -285,4 +333,4 @@ function ReminderCard({
       </CardContent>
     </Card>
   );
-} 
+}

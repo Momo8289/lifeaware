@@ -46,28 +46,43 @@ export default function SettingsProfilePage() {
 
   useEffect(() => {
     async function loadUserAndProfile() {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        router.replace("/sign-in")
-        return
-      }
-      
-      setUser(user)
-      
-      // Fetch profile data
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
         
-      if (error && error.code !== 'PGRST116') {
+        if (!user) {
+          router.replace("/sign-in")
+          return
+        }
+        
+        setUser(user)
+        
+        // Fetch profile data
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+          
+        if (error && error.code !== 'PGRST116') {
+          // Silent error handling for production
+          toast({
+            title: "Error loading profile",
+            description: "Could not load your profile information. Please try refreshing the page.",
+            variant: "destructive",
+          })
+        }
+        
+        setProfile(profileData || null)
+      } catch (error) {
         // Silent error handling for production
+        toast({
+          title: "Error",
+          description: "Failed to load user data. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
       }
-      
-      setProfile(profileData || null)
-      setLoading(false)
     }
     
     loadUserAndProfile()
@@ -245,4 +260,4 @@ export default function SettingsProfilePage() {
       </Form>
     </div>
   )
-} 
+}

@@ -33,7 +33,7 @@ export function createRobustSubscription(
         try {
           supabase.removeChannel(channel);
         } catch (e) {
-          // Silent error handling
+          console.error('Error removing existing channel:', e);
         }
       }
       
@@ -86,7 +86,7 @@ export function createRobustSubscription(
         }
       });
     } catch (error) {
-      // Silent error handling for production
+      console.error('Error setting up realtime subscription:', error);
       throw error;
     }
   };
@@ -104,8 +104,8 @@ export function createRobustSubscription(
       try {
         supabase.removeChannel(channel);
       } catch (e) {
-        // Silent error handling
+        console.error('Error removing channel during cleanup:', e);
       }
     }
   };
-} 
+}

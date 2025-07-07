@@ -55,9 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await supabase.auth.updateUser({
           data: { display_name: displayName }
         });
-        // Success silently
+        // Success silently logged for debugging
+        console.log('Display name updated successfully');
       } catch (error) {
-        // Silent error handling for production
+        console.error('Error updating display name:', error);
       }
     }
   };
@@ -101,10 +102,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Initial auth check
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (error) {
+        console.error('Error getting user:', error);
+      }
       setUser(data.user);
       // Try to extract display name on initial load
       extractAndSetDisplayName(data.user);
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Error in initial auth check:', error);
       setLoading(false);
     });
 
@@ -118,4 +125,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-} 
+}

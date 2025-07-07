@@ -318,4 +318,4 @@ export default function NewHabitPage() {
   );
 
   return formContent;
-} 
+}
