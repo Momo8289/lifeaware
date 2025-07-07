@@ -227,8 +227,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication system error' }, { status: 500 });
     }
 
-    // Prepare update data with validation
-    let updateData;
+    // Prepare update data with proper typing - FIXED TYPE ISSUES
+    let updateData: {
+      updated_at: string;
+      font_size?: string;
+      color_theme?: string;
+      display_mode?: string;
+    };
+    
     try {
       updateData = { 
         updated_at: new Date().toISOString() 
