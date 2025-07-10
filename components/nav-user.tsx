@@ -96,25 +96,25 @@ export function NavUser({
                 </a>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="/settings/account">
+                <a href="/(protected)/dashboard/settings/account">
                   <UserCircleIcon />
                   Account
                 </a>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="/settings/appearance">
+                <a href="/(protected)/dashboard/settings/appearance">
                   <Palette />
                   Appearance
                 </a>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="/settings/notifications">
+                <a href="/(protected)/dashboard/settings/notifications">
                   <BellIcon />
                   Notifications
                 </a>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="/settings/display">
+                <a href="/(protected)/dashboard/settings/display">
                   <MonitorIcon />
                   Display
                 </a>
