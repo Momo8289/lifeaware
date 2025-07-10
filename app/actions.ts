@@ -57,6 +57,8 @@ export const signInAction = async (formData: FormData) => {
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {
+  'use server'
+
   const email = formData.get("email")?.toString();
   const supabase = await createClient();
 
