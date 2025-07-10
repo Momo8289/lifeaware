@@ -9,5 +9,6 @@ const nextConfig: NextConfig = {
         process.env?.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL
     }
 };
+console.log("CONFIG:", nextConfig.env)
 
 export default nextConfig;
