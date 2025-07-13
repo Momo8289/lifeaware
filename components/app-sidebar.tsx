@@ -184,7 +184,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         if (!intervalId){
         // Add manual refresh interval as a fallback
          intervalId = setInterval(()=> {
-          console.log("[Sidebar] Polling reminder count!");
+         // console.log("[Sidebar] Polling reminder count!");
           fetchReminderCount();
         }, 30000);
       }
