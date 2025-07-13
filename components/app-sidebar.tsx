@@ -97,6 +97,7 @@ const data = {
     },
   ],
 }
+let intervalId: NodeJS.Timeout | null=null;
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
@@ -126,8 +127,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Fetch the count of active reminders
   React.useEffect(() => {
     console.log("[Sidebar] Reminder effect triggered");
+
     let cleanupFunction: (() => void) | null=null;
-    let intervalId: NodeJS.Timeout | null=null;
+  
+
     const fetchReminderCount = async () => {
       try {
         console.log("[Sidebar]Polling reminder count!", new Date().toLocaleTimeString());
@@ -178,37 +181,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           fetchReminderCount,
           'status=eq.active'
         );
-        
+        if (!intervalId){
         // Add manual refresh interval as a fallback
          intervalId = setInterval(()=> {
           console.log("[Sidebar] Polling reminder count!");
           fetchReminderCount();
         }, 30000);
-        
-        // Update cleanup to include event listener and interval
-        const originalCleanup = cleanupFunction;
-        cleanupFunction = () => {
-          console.log("[Sidebar] Cleanup called!!")
-          window.removeEventListener('refresh-reminders', handleRefreshReminders);
-         
-          if(intervalId){
-           clearInterval(intervalId);
-          }
-
-          if (originalCleanup) originalCleanup();
-        };
-      } catch (err) {
-        // Silent error handling for production
       }
-    };
+      };
+        setup();
+
+        return () => {
+          console.log("[Sidebar] Cleanup called!");
+        
+        
+        if (intervalId){
+          clearInterval(intervalId);
+          console.log("[Sidebar] Cleared interval!", intervalId);
+          intervalId = null;
+        }
+        if (cleanupFunction){
+          cleanupFunction();
+          cleanupFunction = null;
+        }
+        window.removeEventListener('refresh-reminders', fetchReminderCount);
+      };
     
-    // Start the authentication check and listener setup
-    checkAuthAndSetupListeners();
-    
-    // Return cleanup function
-    return () => {
-      if (cleanupFunction) cleanupFunction();
-    };
   }, [pathname]);
   
   // Create a new array with isActive property set based on current path
