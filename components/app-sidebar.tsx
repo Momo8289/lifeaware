@@ -178,13 +178,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         );
         
         // Add manual refresh interval as a fallback
-        const intervalId = setInterval(fetchReminderCount, 30000);
+        const intervalId = setInterval(()=> {
+          console.log("[Sidebar] Polling reminder count!");
+          fetchReminderCount();
+        }, 30000);
         
         // Update cleanup to include event listener and interval
         const originalCleanup = cleanupFunction;
         cleanupFunction = () => {
+          console.log("[Sidebar] Cleanup called!!")
           window.removeEventListener('refresh-reminders', handleRefreshReminders);
-          clearInterval(intervalId);
+         
+          if(intervalId){
+           clearInterval(intervalId);
+          }
+
           if (originalCleanup) originalCleanup();
         };
       } catch (err) {
