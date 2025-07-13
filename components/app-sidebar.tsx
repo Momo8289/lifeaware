@@ -125,10 +125,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   
   // Fetch the count of active reminders
   React.useEffect(() => {
-    let cleanupFunction: (() => void) | undefined;
-    
+    console.log("[Sidebar] Reminder effect triggered");
+    let cleanupFunction: (() => void) | null=null;
+    let intervalId: NodeJS.Timeout | null=null;
     const fetchReminderCount = async () => {
       try {
+        console.log("[Sidebar]Polling reminder count!", new Date().toLocaleTimeString());
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
@@ -140,29 +142,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         if (error) throw error;
         setReminderCount(count || 0);
       } catch (error) {
-        // Silent error handling for production
+        console.warn("[Sidebar] Reminder fetch failed", error);
       }
     };
 
+    const setup = async () => {
     // Only run in protected routes where the pathname indicates a logged-in user
     // This is a quick way to prevent this from running on the landing page
     if (!pathname || pathname === '/' || pathname.startsWith('/sign-')) {
+      console.log("[Sidebar] Skipping setup due to public route");
       return; // Don't set up any listeners for non-app routes
     }
 
     // Check if user is authenticated before setting up listeners
-    const checkAuthAndSetupListeners = async () => {
-      try {
         const { data: { user } } = await supabase.auth.getUser();
-        
         // If no user is authenticated, don't set up any listeners
         if (!user) return;
         
         // Fetch initial count
-        fetchReminderCount();
+        await fetchReminderCount();
         
         // Listen for the custom refresh event
         const handleRefreshReminders = () => {
+          console.log("[Sidebar]Manual refresh event recieved!");
           fetchReminderCount();
         };
         
@@ -178,7 +180,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         );
         
         // Add manual refresh interval as a fallback
-        const intervalId = setInterval(()=> {
+         intervalId = setInterval(()=> {
           console.log("[Sidebar] Polling reminder count!");
           fetchReminderCount();
         }, 30000);
