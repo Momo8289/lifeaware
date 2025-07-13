@@ -15,6 +15,5 @@ export const getURL = () => {
 
     // Make sure to include a trailing `/`.
     url = url.endsWith('/') ? url : `${url}/`
-
     return url
 } 
