@@ -68,14 +68,16 @@ export const forgotPasswordAction = async (formData: FormData) => {
 
   // Use Supabase's built-in password reset flow
   // The user will get an email with a link to reset their password
-  const url = getURL()
+  const url = `${getURL()}reset-password`
+  console.log(url)
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     // This will direct users back to your app after they set their password in Supabase's UI
-    redirectTo: `${url}/reset-password`,
+    redirectTo: url,
   });
 
   if (error) {
     // Silent error handling for production
+    console.error(error)
     return encodedRedirect(
       "error",
       "/forgot-password",
