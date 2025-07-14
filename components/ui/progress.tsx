@@ -3,7 +3,8 @@
 import * as React from "react"
 import * as ProgressPrimitive from "@radix-ui/react-progress"
 
-import { cn } from "@/lib/utils"
+
+import {concatClasses} from "@/utils/helpers";
 
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
@@ -11,7 +12,7 @@ const Progress = React.forwardRef<
 >(({ className, value, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
-    className={cn(
+    className={concatClasses(
       "relative h-2 w-full overflow-hidden rounded-full bg-muted",
       className
     )}

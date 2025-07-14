@@ -3,7 +3,8 @@
 import { useCurrentUserImage } from '@/hooks/use-current-user-image'
 import { useCurrentUserName } from '@/hooks/use-current-user-name'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { cn } from '@/lib/utils'
+
+import {concatClasses} from "@/utils/helpers";
 
 interface CurrentUserAvatarProps {
   className?: string
@@ -23,7 +24,7 @@ export function CurrentUserAvatar({
     ?.toUpperCase() || fallback
 
   return (
-    <Avatar className={cn("", className)}>
+    <Avatar className={concatClasses("", className)}>
       {profileImage && <AvatarImage src={profileImage} alt={name || 'User avatar'} />}
       <AvatarFallback>{initials}</AvatarFallback>
     </Avatar>

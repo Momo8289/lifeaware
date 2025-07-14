@@ -10,7 +10,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { cn } from "@/lib/utils"
+
+import {concatClasses} from "@/utils/helpers";
 
 export function NavMain({
   items,
