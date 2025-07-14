@@ -491,7 +491,7 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
               asChild
               className="flex-1 sm:flex-none"
             >
-              <Link href={`/app/(protected)/dashboard/habits/${habit.id}`}>
+              <Link href={`/habits/${habit.id}`}>
                 Details
               </Link>
             </Button>

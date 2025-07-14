@@ -67,8 +67,6 @@ export default function HabitsPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  console.log("ENV:", getURL())
-
   const fetchHabits = async () => {
     if (timezoneLoading) return; // Wait for timezone to load
     
@@ -329,7 +327,6 @@ export default function HabitsPage() {
 
   return (
     <div className="container py-6 space-y-6">
-      <p>{getURL()}</p>
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Habits</h1>
