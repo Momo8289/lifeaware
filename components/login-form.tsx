@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/client"
-import { cn } from "@/lib/utils"
+import { supabase } from "@/utils/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,9 +8,10 @@ import Link from "next/link"
 import { useIsMobile } from "@/hooks/use-mobile"
 import MicrosoftLogo from "./icons/microsoft-logo"
 import GoogleLogo from "./icons/google-logo"
-import { getURL } from "@/utils/helpers"
+import {concatClasses, getURL} from "@/utils/helpers"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle2 } from "lucide-react"
+import {twMerge} from "tailwind-merge";
 
 interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
   message?: string | null;
@@ -88,7 +88,7 @@ export function LoginForm({
   }
 
   return (
-    <div className={cn("flex flex-col gap-6 w-full", className)} {...props}>
+    <div className={twMerge("flex flex-col gap-6 w-full", className)} {...props}>
       <div className="space-y-6 w-full">
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold">Welcome back</h1>

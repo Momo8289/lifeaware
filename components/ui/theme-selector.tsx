@@ -2,11 +2,11 @@
 
 import * as React from "react"
 import { Check } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useTheme } from "next-themes"
 import { useAppearanceSettings } from "@/hooks/use-appearance-settings"
+import {concatClasses} from "@/utils/helpers";
 
 export interface Theme {
   name: string
@@ -1209,7 +1209,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
 
   if (!mounted) {
     return (
-      <div className={cn("space-y-4", className)}>
+      <div className={concatClasses("space-y-4", className)}>
         <div>
           <h4 className="text-sm font-medium mb-2">Color Theme</h4>
           <p className="text-xs text-muted-foreground">
@@ -1244,7 +1244,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
   }
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={concatClasses("space-y-4", className)}>
       <div>
         <h4 className="text-sm font-medium mb-2">Color Theme</h4>
         <p className="text-xs text-muted-foreground">
@@ -1260,7 +1260,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
           return (
             <Card
               key={theme.name}
-              className={cn(
+              className={concatClasses(
                 "cursor-pointer transition-all hover:ring-2 hover:ring-ring",
                 isSelected && "ring-2 ring-ring"
               )}

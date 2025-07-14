@@ -17,6 +17,7 @@ export function createRobustSubscription(
   onChangeCallback: () => void,
   filter?: string
 ) {
+  // TODO: Implement proper cleanup function to return
   // Generate a unique channel name with timestamp to prevent conflicts
   const channelName = `${table}-${userId}-${Date.now()}`;
   let channel: RealtimeChannel | undefined;
@@ -86,6 +87,7 @@ export function createRobustSubscription(
       });
     } catch (error) {
       // Silent error handling for production
+      throw error;
     }
   };
   

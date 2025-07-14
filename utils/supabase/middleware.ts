@@ -13,6 +13,7 @@ export const updateSession = async (request: NextRequest) => {
   });
 
   // Skip middleware entirely for static assets or special paths
+  // TODO: Make this more efficient with an array
   if (
     path.startsWith('/_next/') ||
     path.startsWith('/.well-known/') ||

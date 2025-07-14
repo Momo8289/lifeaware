@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/utils/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, CheckCircle2, Flame, Calendar, LineChart, Settings, Check, X } from 'lucide-react';
@@ -15,8 +15,8 @@ import { HabitInsights } from '@/components/habits/HabitInsights';
 import { HabitGamification } from '@/components/habits/HabitGamification';
 import { NewHabitModal } from '@/components/habits/NewHabitModal';
 import { createBrowserClient } from '@supabase/ssr';
-import { useUserTimezone } from '@/lib/hooks/useUserTimezone';
-import { getTodayInTimezone } from '@/lib/utils/timezone';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { getTodayInTimezone } from '@/utils/timezone';
 import { useReminders } from '@/components/providers/ReminderProvider';
 import {getURL} from "@/utils/helpers";
 

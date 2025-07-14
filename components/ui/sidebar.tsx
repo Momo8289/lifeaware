@@ -6,7 +6,6 @@ import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
@@ -24,6 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {concatClasses} from "@/utils/helpers";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -146,7 +146,7 @@ const SidebarProvider = React.forwardRef<
                 ...style,
               } as React.CSSProperties
             }
-            className={cn(
+            className={concatClasses(
               "group/sidebar-wrapper flex min-h-svh w-full has-[[data-variant=inset]]:bg-sidebar",
               className
             )}
@@ -186,7 +186,7 @@ const Sidebar = React.forwardRef<
     if (collapsible === "none") {
       return (
         <div
-          className={cn(
+          className={concatClasses(
             "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
             className
           )}
@@ -233,7 +233,7 @@ const Sidebar = React.forwardRef<
       >
         {/* This is what handles the sidebar gap on desktop */}
         <div
-          className={cn(
+          className={concatClasses(
             "relative w-[--sidebar-width] bg-transparent transition-[width] duration-200 ease-linear",
             "group-data-[collapsible=offcanvas]:w-0",
             "group-data-[side=right]:rotate-180",
@@ -243,7 +243,7 @@ const Sidebar = React.forwardRef<
           )}
         />
         <div
-          className={cn(
+          className={concatClasses(
             "fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
@@ -281,7 +281,7 @@ const SidebarTrigger = React.forwardRef<
       data-sidebar="trigger"
       variant="ghost"
       size="icon"
-      className={cn("h-7 w-7", className)}
+      className={concatClasses("h-7 w-7", className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
@@ -309,7 +309,7 @@ const SidebarRail = React.forwardRef<
       tabIndex={-1}
       onClick={toggleSidebar}
       title="Toggle Sidebar"
-      className={cn(
+      className={concatClasses(
         "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex",
         "[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize",
         "[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
@@ -331,7 +331,7 @@ const SidebarInset = React.forwardRef<
   return (
     <main
       ref={ref}
-      className={cn(
+      className={concatClasses(
         "relative flex w-full flex-1 flex-col bg-background",
         "md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
@@ -350,7 +350,7 @@ const SidebarInput = React.forwardRef<
     <Input
       ref={ref}
       data-sidebar="input"
-      className={cn(
+      className={concatClasses(
         "h-8 w-full bg-background shadow-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
         className
       )}
@@ -368,7 +368,7 @@ const SidebarHeader = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="header"
-      className={cn("flex flex-col gap-2 p-2", className)}
+      className={concatClasses("flex flex-col gap-2 p-2", className)}
       {...props}
     />
   )
@@ -383,7 +383,7 @@ const SidebarFooter = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="footer"
-      className={cn("flex flex-col gap-2 p-2", className)}
+      className={concatClasses("flex flex-col gap-2 p-2", className)}
       {...props}
     />
   )
@@ -398,7 +398,7 @@ const SidebarSeparator = React.forwardRef<
     <Separator
       ref={ref}
       data-sidebar="separator"
-      className={cn("mx-2 w-auto bg-sidebar-border", className)}
+      className={concatClasses("mx-2 w-auto bg-sidebar-border", className)}
       {...props}
     />
   )
@@ -413,7 +413,7 @@ const SidebarContent = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="content"
-      className={cn(
+      className={concatClasses(
         "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
         className
       )}
@@ -431,7 +431,7 @@ const SidebarGroup = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="group"
-      className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
+      className={concatClasses("relative flex w-full min-w-0 flex-col p-2", className)}
       {...props}
     />
   )
@@ -448,7 +448,7 @@ const SidebarGroupLabel = React.forwardRef<
     <Comp
       ref={ref}
       data-sidebar="group-label"
-      className={cn(
+      className={concatClasses(
         "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
         className
@@ -469,7 +469,7 @@ const SidebarGroupAction = React.forwardRef<
     <Comp
       ref={ref}
       data-sidebar="group-action"
-      className={cn(
+      className={concatClasses(
         "absolute right-3 top-3.5 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         // Increases the hit area of the button on mobile.
         "after:absolute after:-inset-2 after:md:hidden",
@@ -489,7 +489,7 @@ const SidebarGroupContent = React.forwardRef<
   <div
     ref={ref}
     data-sidebar="group-content"
-    className={cn("w-full text-sm", className)}
+    className={concatClasses("w-full text-sm", className)}
     {...props}
   />
 ))
@@ -502,7 +502,7 @@ const SidebarMenu = React.forwardRef<
   <ul
     ref={ref}
     data-sidebar="menu"
-    className={cn("flex w-full min-w-0 flex-col gap-1", className)}
+    className={concatClasses("flex w-full min-w-0 flex-col gap-1", className)}
     {...props}
   />
 ))
@@ -515,7 +515,7 @@ const SidebarMenuItem = React.forwardRef<
   <li
     ref={ref}
     data-sidebar="menu-item"
-    className={cn("group/menu-item relative", className)}
+    className={concatClasses("group/menu-item relative", className)}
     {...props}
   />
 ))
@@ -572,7 +572,7 @@ const SidebarMenuButton = React.forwardRef<
         data-sidebar="menu-button"
         data-size={size}
         data-active={isActive}
-        className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
+        className={concatClasses(sidebarMenuButtonVariants({ variant, size }), className)}
         {...props}
       />
     )
@@ -615,7 +615,7 @@ const SidebarMenuAction = React.forwardRef<
     <Comp
       ref={ref}
       data-sidebar="menu-action"
-      className={cn(
+      className={concatClasses(
         "absolute right-1 top-1.5 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
         // Increases the hit area of the button on mobile.
         "after:absolute after:-inset-2 after:md:hidden",
@@ -640,7 +640,7 @@ const SidebarMenuBadge = React.forwardRef<
   <div
     ref={ref}
     data-sidebar="menu-badge"
-    className={cn(
+    className={concatClasses(
       "pointer-events-none absolute right-1 flex h-5 min-w-5 select-none items-center justify-center rounded-md px-1 text-xs font-medium tabular-nums text-sidebar-foreground",
       "peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[active=true]/menu-button:text-sidebar-accent-foreground",
       "peer-data-[size=sm]/menu-button:top-1",
@@ -669,7 +669,7 @@ const SidebarMenuSkeleton = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="menu-skeleton"
-      className={cn("flex h-8 items-center gap-2 rounded-md px-2", className)}
+      className={concatClasses("flex h-8 items-center gap-2 rounded-md px-2", className)}
       {...props}
     >
       {showIcon && (
@@ -699,7 +699,7 @@ const SidebarMenuSub = React.forwardRef<
   <ul
     ref={ref}
     data-sidebar="menu-sub"
-    className={cn(
+    className={concatClasses(
       "mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l border-sidebar-border px-2.5 py-0.5",
       "group-data-[collapsible=icon]:hidden",
       className
@@ -731,7 +731,7 @@ const SidebarMenuSubButton = React.forwardRef<
       data-sidebar="menu-sub-button"
       data-size={size}
       data-active={isActive}
-      className={cn(
+      className={concatClasses(
         "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
         "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground",
         size === "sm" && "text-xs",

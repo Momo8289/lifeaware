@@ -1,7 +1,6 @@
 import * as React from "react"
 import { ChevronRight, Home, MoreHorizontal } from "lucide-react"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
+import {concatClasses} from "@/utils/helpers";
 
 interface BreadcrumbProps extends React.HTMLAttributes<HTMLElement> {
   segments: {
@@ -60,7 +60,7 @@ export function Breadcrumb({
   return (
     <nav
       aria-label="Breadcrumb"
-      className={cn("flex items-center text-xs sm:text-sm", className)}
+      className={concatClasses("flex items-center text-xs sm:text-sm", className)}
       {...props}
     >
       <ol className="flex items-center gap-1 md:gap-1.5 min-w-0">
