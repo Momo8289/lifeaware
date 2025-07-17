@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         // Success silently
       } catch (error) {
-        // Silent error handling for production
+        console.error('Failed to update user display name:', error);
       }
     }
   };

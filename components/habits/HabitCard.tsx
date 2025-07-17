@@ -272,7 +272,7 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
         window.dispatchEvent(new CustomEvent('refresh-reminders'));
       }, 100);
     } catch (error) {
-      // Silent error in production
+      console.error('Failed to remove reminder:', error);
       toast({
         title: "Failed to remove reminder",
         description: "An error occurred while removing the reminder",
@@ -388,7 +388,7 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
       
       setDialogOpen(false);
     } catch (error) {
-      // Silent error in production
+      console.error('Failed to update habit dialog:', error);
       toast({
         title: "Failed to create reminder",
         description: "An error occurred while creating the reminder",

@@ -103,6 +103,7 @@ export default function GoalsPage() {
 
         setGoals(goalsWithStats);
       } catch (error) {
+        console.error('Failed to load goals:', error);
         // Silent error handling for production
       } finally {
         setIsLoading(false);

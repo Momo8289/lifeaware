@@ -170,7 +170,7 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
           days_remaining: daysRemaining
         });
       } catch (error) {
-        // Silent error handling for production
+        console.error('Failed to load goal details:', error);
         toast({
           title: "Error",
           description: "Failed to load goal details",
@@ -202,7 +202,7 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
       });
       router.push('/goals');
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to delete goal:', error);
       toast({
         title: "Error",
         description: "Failed to delete goal",
@@ -249,7 +249,7 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
       // Refresh the page to update data
       window.location.reload();
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to log progress:', error);
       toast({
         title: "Error",
         description: "Failed to log progress",
@@ -316,7 +316,7 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
       // Refresh the page to update data
       window.location.reload();
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to add milestone:', error);
       toast({
         title: "Error",
         description: "Failed to add milestone",
@@ -353,7 +353,7 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
         description: `Milestone marked as ${newStatus ? 'completed' : 'incomplete'}`
       });
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to update milestone status:', error);
       toast({
         title: "Error",
         description: "Failed to update milestone status",

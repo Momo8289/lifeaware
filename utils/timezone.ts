@@ -7,10 +7,10 @@
  */
 export function getUserTimezone(): string {
   try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone;
-  } catch {
-    return 'UTC';
-  }
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+} catch (error) {
+  console.error('Failed to detect user timezone, falling back to UTC:', error);
+  return 'UTC';
 }
 
 /**

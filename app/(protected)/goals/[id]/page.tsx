@@ -170,7 +170,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
           days_remaining: daysRemaining
         });
       } catch (error) {
-        // Silent error handling for production
+        console.error('Failed to load goal details:', error);
         toast({
           title: "Error",
           description: "Failed to load goal details",
@@ -202,7 +202,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
       });
       router.push('/goals');
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to delete goal:', error);
       toast({
         title: "Error",
         description: "Failed to delete goal",
@@ -249,7 +249,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
       // Refresh the page to update data
       window.location.reload();
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to log progress:', error);
       toast({
         title: "Error",
         description: "Failed to log progress",
@@ -315,7 +315,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
       // Refresh the page to update data
       window.location.reload();
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to add milestone:', error);
       toast({
         title: "Error",
         description: "Failed to add milestone",
@@ -348,7 +348,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
         description: `Milestone marked as ${milestone.is_completed ? 'incomplete' : 'complete'}`
       });
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to update milestone status:', error);
       toast({
         title: "Error",
         description: "Failed to update milestone",

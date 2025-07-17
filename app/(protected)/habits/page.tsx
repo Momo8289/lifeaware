@@ -140,7 +140,7 @@ export default function HabitsPage() {
               streakData = result.streak || 0;
             }
           } catch (error) {
-            // Silent error handling, use default value of 0
+            console.error('Failed to load habit stats:', error);
           }
           
           // Calculate total days since habit creation
@@ -175,7 +175,7 @@ export default function HabitsPage() {
 
       setHabits(habitsWithStats);
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to load habits:', error);
     } finally {
       setIsLoading(false);
     }
@@ -305,7 +305,7 @@ export default function HabitsPage() {
         duration: 3000,
       });
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to update habit completion:', error);
       toast({
         title: "Update failed",
         description: "Failed to update habit status",

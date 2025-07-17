@@ -84,7 +84,7 @@ export function HabitRemindersTab() {
 
       setUpcomingHabits(upcoming);
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to load upcoming habits:', error);
     } finally {
       setIsLoading(false);
     }

@@ -87,7 +87,7 @@ export const updateSession = async (request: NextRequest) => {
 
     return response;
   } catch (e) {
-    // Silent error handling in production
+    console.error('Middleware authentication error:', e);
     // For protected routes, redirect to sign-in
     // For others, just return the original response to avoid loops
     const path = request.nextUrl.pathname;

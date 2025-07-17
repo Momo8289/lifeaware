@@ -54,7 +54,7 @@ export default function RemindersPage() {
       
       setReminders(data || []);
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to load reminders:', error);
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +85,7 @@ export default function RemindersPage() {
         duration: 3000
       });
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to update reminder:', error);
       toast({
         title: "Failed to update reminder",
         description: "An error occurred while updating the reminder status",

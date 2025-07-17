@@ -130,7 +130,7 @@ export default function NewMetricPage() {
       });
       router.push('/metrics');
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Failed to create metric:', error);
       toast({
         title: "Error",
         description: typeof error === 'object' && error.message 
