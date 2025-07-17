@@ -95,7 +95,7 @@ export default function EditGoalForm({ goalId }: EditGoalFormProps) {
           is_completed: data.is_completed,
         });
       } catch (error) {
-        // Silent error handling for production
+        console.error('Failed to load goal details for editing:', error);
         toast({
           title: "Error",
           description: "Failed to load goal details",
@@ -176,7 +176,7 @@ export default function EditGoalForm({ goalId }: EditGoalFormProps) {
       });
       router.push(`/goals/${goalId}`);
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Failed to update goal:', error);
       toast({
         title: "Error",
         description: typeof error === 'object' && error.message 

@@ -126,7 +126,7 @@ export default function NewHabitPage() {
       });
       router.push('/habits');
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Failed to create habit:', error);
       toast({
         title: "Error",
         description: typeof error === 'object' && error.message 

@@ -166,7 +166,7 @@ export function SiteHeader() {
           setLoadedTitles(newTitles);
         }
       } catch (error) {
-        // Silent error handling for production
+        console.error('Failed to sign out:', error);
       }
     };
     

@@ -133,7 +133,7 @@ export default function NewGoalPage() {
       });
       router.push('/goals');
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Failed to create goal:', error);
       toast({
         title: "Error",
         description: typeof error === 'object' && error.message 

@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
           .lte('completed_at', endOfDay.toISOString());
       }
     } catch (error) {
-      // Don't fail the habit completion if reminder update fails
+      console.error('Failed to update reminders for habit completion:', error);
       console.error('Failed to update reminders:', error);
     }
 

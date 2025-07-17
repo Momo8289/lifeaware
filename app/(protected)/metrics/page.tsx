@@ -110,7 +110,7 @@ export default function MetricsPage() {
             trendData = result.trend || 'unknown';
           }
         } catch (error) {
-          // Silent error handling, use default value of 'unknown'
+          console.error('Failed to load metric stats:', error);
         }
         
         // Get count of logs
@@ -129,7 +129,7 @@ export default function MetricsPage() {
 
       setMetrics(metricsWithStats);
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to load metrics:', error);
     } finally {
       setIsLoading(false);
     }

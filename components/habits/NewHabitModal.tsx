@@ -197,6 +197,7 @@ export function NewHabitModal({ open, onOpenChange, onHabitCreated }: NewHabitMo
       onHabitCreated();
       onOpenChange(false);
     } catch (error: any) {
+      console.error('Failed to create habit in modal:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to create habit",

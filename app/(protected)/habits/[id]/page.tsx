@@ -184,11 +184,11 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
           }
         }
       } catch (error) {
-        // Silent error handling
+        console.error('Failed to load habit stats:', error);
       }
 
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Failed to load habit details:', error);
     } finally {
       setIsLoading(false);
     }
@@ -305,7 +305,7 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
       }
       
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Failed to complete habit action:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update habit status",

@@ -58,7 +58,7 @@ export function useAppearanceSettings() {
         setSettings(loadedSettings)
         
       } catch (error) {
-        // Fallback to localStorage on error
+        console.error('Failed to load appearance settings, falling back to localStorage:', error);
         const fallbackSettings = loadFromLocalStorage()
         setSettings(fallbackSettings)
       } finally {

@@ -132,7 +132,7 @@ export default function SettingsProfilePage() {
         description: "Your profile has been updated successfully.",
       })
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Failed to update profile:', error);
       toast({
         title: "Error updating profile",
         description: error.message || "Something went wrong. Please try again.",

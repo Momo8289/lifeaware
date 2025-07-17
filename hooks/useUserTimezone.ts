@@ -46,7 +46,7 @@ export function useUserTimezone() {
             });
         }
       } catch (error) {
-        // Fallback to browser timezone on error
+        console.error('Failed to get user timezone from profile:', error);
         setTimezone(getUserTimezone());
       } finally {
         setIsLoading(false);

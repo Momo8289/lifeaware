@@ -37,7 +37,7 @@ export function useCurrentUserImage() {
             }
           }
         } catch (error) {
-          // Silent error handling for production
+          console.error('Failed to load user avatar:', error);
         }
       }
     }

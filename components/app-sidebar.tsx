@@ -140,7 +140,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         if (error) throw error;
         setReminderCount(count || 0);
       } catch (error) {
-        // Silent error handling for production
+        console.error('Failed to load reminder count:', error);
+        setReminderCount(0); // Fallback so UI doesn't break
       }
     };
 
@@ -181,7 +182,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           if (originalCleanup) originalCleanup();
         };
       } catch (err) {
-        // Silent error handling for production
+        console.error('Failed to load user profile data:', err);
       }
     };
 

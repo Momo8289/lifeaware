@@ -92,7 +92,7 @@ export function AvatarUpload() {
         if (error) throw error
       }
     } catch (error) {
-      // Silent error handling for production
+      console.error('Failed to delete old avatar files:', error);
       throw error
     }
   }
@@ -144,7 +144,7 @@ export function AvatarUpload() {
         await supabase.auth.refreshSession()
       }
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Failed to update avatar:', error);
       toast({
         title: "Error updating avatar",
         description: error.message || "Failed to update your profile picture. Please try again.",
@@ -175,7 +175,7 @@ export function AvatarUpload() {
         await supabase.auth.refreshSession()
       }
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Failed to remove avatar:', error);
       toast({
         title: "Error removing avatar",
         description: error.message || "Failed to remove your profile picture. Please try again.",

@@ -126,7 +126,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
           });
         }
       } catch (error) {
-        // Silent error handling for production
+        console.error('Failed to load habit data for editing:', error);
         toast({
           title: "Error",
           description: "Failed to load habit data",
@@ -191,7 +191,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
       });
       router.push(`/habits/${id}`);
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Failed to update habit:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update habit",
@@ -220,7 +220,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
       });
       router.push('/habits');
     } catch (error: any) {
-      // Silent error handling for production
+      console.error('Failed to delete habit:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete habit",
