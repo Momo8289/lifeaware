@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/utils/supabase/client'
+import { supabase } from 'utils/supabase/client'
 
 export function useCurrentUserImage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)

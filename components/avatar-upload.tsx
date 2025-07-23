@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/utils/supabase/client'
+import { supabase } from 'utils/supabase/client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Icons } from '@/components/ui/icons'
 import { toast } from '@/components/ui/use-toast'
 import { PencilIcon, Trash2Icon, UploadIcon } from 'lucide-react'
-import { useCurrentUserName } from '@/hooks/use-current-user-name'
-import { useCurrentUserImage } from '@/hooks/use-current-user-image'
+import { useCurrentUserName } from 'hooks/use-current-user-name'
+import { useCurrentUserImage } from 'hooks/use-current-user-image'
 import { Input } from '@/components/ui/input'
 
 export function AvatarUpload() {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { BellIcon, CalendarDays, Clock, PlusIcon } from "lucide-react";
-import { supabase } from "@/utils/supabase/client";
+import { supabase } from "utils/supabase/client";
 import { format, addDays, isSameDay } from "date-fns";
 
 import { Button } from "@/components/ui/button";

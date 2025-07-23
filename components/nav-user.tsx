@@ -10,7 +10,7 @@ import {
   User,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/utils/supabase/client"
+import { supabase } from "utils/supabase/client"
 
 import {
   Avatar,

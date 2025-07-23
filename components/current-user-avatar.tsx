@@ -1,10 +1,10 @@
 'use client'
 
-import { useCurrentUserImage } from '@/hooks/use-current-user-image'
-import { useCurrentUserName } from '@/hooks/use-current-user-name'
+import { useCurrentUserImage } from 'hooks/use-current-user-image'
+import { useCurrentUserName } from 'hooks/use-current-user-name'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
-import {concatClasses} from "@/utils/helpers";
+import {concatClasses} from "utils/helpers";
 
 interface CurrentUserAvatarProps {
   className?: string

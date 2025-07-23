@@ -1,6 +1,6 @@
 'use client'
 
-import { useAppearanceSettings } from '@/hooks/use-appearance-settings'
+import { useAppearanceSettings } from 'hooks/use-appearance-settings'
 import { useTheme } from 'next-themes'
 import { useEffect } from 'react'
 import { themes } from '@/components/ui/theme-selector'

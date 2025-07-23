@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { getUserTimezone } from '../utils/timezone';
+import { getUserTimezone } from 'utils/timezone';
 
 export function useUserTimezone() {
   const [timezone, setTimezone] = useState<string>('UTC');
@@ -16,33 +16,33 @@ export function useUserTimezone() {
 
         // First, try to get from user profile
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (user) {
           const { data: profile } = await supabase
             .from('profiles')
             .select('timezone')
             .eq('id', user.id)
             .single();
-          
+
           if (profile?.timezone) {
             setTimezone(profile.timezone);
             return;
           }
         }
-        
+
         // Fallback to browser timezone
         const browserTimezone = getUserTimezone();
         setTimezone(browserTimezone);
-        
+
         // Update user profile with browser timezone if logged in and no timezone set
         if (user && browserTimezone !== 'UTC') {
           await supabase
             .from('profiles')
-            .upsert({ 
-              id: user.id, 
-              timezone: browserTimezone 
-            }, { 
-              onConflict: 'id' 
+            .upsert({
+              id: user.id,
+              timezone: browserTimezone
+            }, {
+              onConflict: 'id'
             });
         }
       } catch (error) {
@@ -57,4 +57,4 @@ export function useUserTimezone() {
   }, []);
 
   return { timezone, isLoading };
-} 
+}

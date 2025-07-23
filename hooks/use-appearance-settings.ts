@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/utils/supabase/client'
+import { supabase } from 'utils/supabase/client'
 
 interface AppearanceSettings {
   fontSize: string

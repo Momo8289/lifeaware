@@ -5,12 +5,15 @@
 /**
  * Get user's timezone from browser or fallback to UTC
  */
+import { getUserTimezone } from 'utils/timezone';
+
 export function getUserTimezone(): string {
   try {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone;
-} catch (error) {
-  console.error('Failed to detect user timezone, falling back to UTC:', error);
-  return 'UTC';
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch (error) {
+    console.error('Failed to detect user timezone, falling back to UTC:', error);
+    return 'UTC';
+  }
 }
 
 /**
@@ -86,4 +89,4 @@ export function daysDifferenceInTimezone(date1: Date, date2: Date, timezone: str
   const date2Local = new Date(day2);
   
   return Math.floor((date1Local.getTime() - date2Local.getTime()) / (1000 * 60 * 60 * 24));
-} 
+}
