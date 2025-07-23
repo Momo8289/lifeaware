@@ -128,7 +128,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   React.useEffect(() => {
    
 
-    let cleanupFunction: (() => void) | null=null;
+    let cleanupFunction: (() => void);
   
 
     const fetchReminderCount = async () => {
@@ -200,8 +200,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           intervalId = null;
         }
         if (cleanupFunction){
+          
           cleanupFunction();
-          cleanupFunction = null;
+          
         }
         window.removeEventListener('refresh-reminders', fetchReminderCount);
       };

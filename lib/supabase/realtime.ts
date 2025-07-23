@@ -19,9 +19,9 @@ export function createRobustSubscription(
 ): ()=> void {
   // Generate a unique channel name with timestamp to prevent conflicts
   const channelName = `${table}-${userId}-${Date.now()}`;
-  let channel: RealtimeChannel | null=null;
+  let channel: RealtimeChannel;
   let retryCount = 0;
-  let retryTimeout: NodeJS.Timeout | null=null;
+  let retryTimeout: NodeJS.Timeout;
   const MAX_RETRIES = 5;
   //variable to track if cleaned-up
   let isCleanedUp = false;
@@ -83,7 +83,7 @@ export function createRobustSubscription(
           retryCount = 0;
           if (retryTimeout) {
             clearTimeout(retryTimeout);
-            retryTimeout = null;
+            
           }
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           // Attempt to reconnect with exponential backoff
@@ -111,15 +111,16 @@ export function createRobustSubscription(
    
 
     if (retryTimeout) {
+     
       clearTimeout(retryTimeout)
-      retryTimeout = null
+      
     }
 
     if (channel) {
       try {
-       
+      
         supabase.removeChannel(channel)
-        channel = null
+       
       } catch (e) {
        // console.warn(`[Realtime] Failed to remove channel during cleanup:`, e)
       }
