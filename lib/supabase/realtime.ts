@@ -30,20 +30,20 @@ export function createRobustSubscription(
   const setupChannel = () => {
     //checked if cleaned-up to not create unnecessary poll requests
     if (isCleanedUp){
-      //console.log(`[Realtime] Cleanup already called — setup stopped`) 
+      
       return}
       // Clean up any existing channel first
       if (channel) {
-        //console.log(`[Realtime] Removing existing channel: ${channelName}`)
+        
         try {
           supabase.removeChannel(channel);
         } catch (e) {
-       //   console.warn(`[Realtime] Failed to remove existing channel:`, e)
+      
         }
       
       
       // Create a new channel
-      //console.log(`[Realtime] Creating new channel: ${channelName}`)
+     
       channel = supabase.channel(channelName);
       
       // Add event handlers for all CRUD operations
@@ -60,7 +60,7 @@ export function createRobustSubscription(
         }
         
         channel = channel!.on('postgres_changes', options, payload => {
-        //  console.log(`[Realtime] Event received:`, payload)
+       
           onChangeCallback();
         });
       });
@@ -68,13 +68,13 @@ export function createRobustSubscription(
       // Add reconnection handler
       channel.on('system', { event: 'reconnect' }, () => {
         // When system reconnects, refresh data
-      //  console.log(`[Realtime] Reconnected — triggering callback`)
+      
         onChangeCallback();
       });
       
       // Subscribe with error handling
       channel.subscribe(status => {
-      //  console.log(`[Realtime] Channel status: ${status}`)
+   
 
         if (isCleanedUp) return;
 
@@ -90,7 +90,7 @@ export function createRobustSubscription(
           if (retryCount < MAX_RETRIES) {
             const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 30000);
             retryCount++;
-          //  console.warn(`[Realtime] Subscription failed — retrying in ${backoffTime}ms`)
+          
             retryTimeout = setTimeout(() => {
               setupChannel();
             }, backoffTime);
@@ -108,7 +108,7 @@ export function createRobustSubscription(
   // Return cleanup function
   return () => {
     isCleanedUp = true
-   // console.log(`[Realtime] Cleanup function called`)
+   
 
     if (retryTimeout) {
       clearTimeout(retryTimeout)
@@ -117,7 +117,7 @@ export function createRobustSubscription(
 
     if (channel) {
       try {
-       // console.log(`[Realtime] Removing channel on cleanup`)
+       
         supabase.removeChannel(channel)
         channel = null
       } catch (e) {
