@@ -126,14 +126,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   
   // Fetch the count of active reminders
   React.useEffect(() => {
-    //console.log("[Sidebar] Reminder effect triggered");
+   
 
     let cleanupFunction: (() => void) | null=null;
   
 
     const fetchReminderCount = async () => {
       try {
-        //console.log("[Sidebar]Polling reminder count!", new Date().toLocaleTimeString());
+        
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
@@ -153,7 +153,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     // Only run in protected routes where the pathname indicates a logged-in user
     // This is a quick way to prevent this from running on the landing page
     if (!pathname || pathname === '/' || pathname.startsWith('/sign-')) {
-     // console.log("[Sidebar] Skipping setup due to public route");
+     
       return; // Don't set up any listeners for non-app routes
     }
 
@@ -167,7 +167,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         
         // Listen for the custom refresh event
         const handleRefreshReminders = () => {
-        //  console.log("[Sidebar]Manual refresh event recieved!");
+        
           fetchReminderCount();
         };
         
@@ -191,12 +191,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         setup();
 
         return () => {
-         // console.log("[Sidebar] Cleanup called!");
+        
         
         
         if (intervalId){
           clearInterval(intervalId);
-         // console.log("[Sidebar] Cleared interval!", intervalId);
+       
           intervalId = null;
         }
         if (cleanupFunction){
