@@ -5,11 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Check, Flame, Settings, CalendarDays, Clock, AlertTriangle, BellIcon, BellRingIcon, X } from "lucide-react"
-import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { format, isToday, addDays, isBefore, setHours, setMinutes, parse } from "date-fns"
 import { toast } from "@/components/ui/use-toast"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/utils/supabase/client"
 import { useState, useEffect } from "react"
 import { useReminders } from "@/components/providers/ReminderProvider"
 import {
@@ -32,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {concatClasses} from "@/utils/helpers";
 
 interface HabitCardProps {
   habit: {
@@ -401,7 +401,7 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
 
   return (
     <>
-      <Card className={cn(
+      <Card className={concatClasses(
         "transition-all duration-300 hover:shadow-md",
         habit.todayStatus === 'completed' ? "border-success/40 bg-success/5" : "",
         !isActiveToday() ? "opacity-70" : ""
@@ -447,7 +447,7 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
               </div>
             </div>
             <div className="flex items-center gap-2 min-w-0">
-              <div className={cn("p-1 rounded-full flex-shrink-0", getStatusColor())}>
+              <div className={concatClasses("p-1 rounded-full flex-shrink-0", getStatusColor())}>
                 <Check className="h-4 w-4" />
               </div>
               <div className="min-w-0">
@@ -499,7 +499,7 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
               variant={hasReminder ? "default" : "ghost"}
               size="sm"
               onClick={openReminderDialog}
-              className={cn(
+              className={concatClasses(
                 "flex-shrink-0",
                 hasReminder ? "bg-blue-500 hover:bg-blue-600 text-white" : "text-blue-500"
               )}
@@ -512,7 +512,7 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
           <Button
             variant={habit.todayStatus === 'completed' ? 'outline' : 'default'}
             size="sm"
-            className={cn(
+            className={concatClasses(
               "w-full sm:w-auto",
               habit.todayStatus === 'completed' ? 'border-success text-success hover:bg-success/10' : ''
             )}

@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { getTodayInTimezone } from '@/lib/utils/timezone';
+import { getTodayInTimezone } from '@/utils/timezone';
 
 export async function POST(request: NextRequest) {
   try {

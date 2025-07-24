@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/utils/supabase/client";
 import { format, isPast, isToday, addDays } from "date-fns";
 
 interface Reminder {

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import * as z from "zod"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/utils/supabase/client"
 
 import { Button } from "@/components/ui/button"
 import {

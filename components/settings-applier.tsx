@@ -2,18 +2,22 @@
 
 import { useAppearanceSettings } from '@/hooks/use-appearance-settings'
 import { useTheme } from 'next-themes'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { themes } from '@/components/ui/theme-selector'
 
 export function SettingsApplier() {
   const { settings, isLoading } = useAppearanceSettings()
   const { setTheme, resolvedTheme } = useTheme()
+  const didInit = useRef(false)
 
   // Apply display mode to next-themes
-  useEffect(() => {
-    if (isLoading) return
-    setTheme(settings.displayMode)
-  }, [settings.displayMode, setTheme, isLoading])
+    useEffect(() => {
+      if (isLoading || didInit.current) return
+      if (settings.displayMode && typeof setTheme === "function") {
+        setTheme(settings.displayMode)
+        didInit.current = true
+      }
+    }, [settings.displayMode, setTheme, isLoading])
 
   // Apply font size when settings change
   useEffect(() => {
