@@ -5,7 +5,6 @@
 /**
  * Get user's timezone from browser or fallback to UTC
  */
-import { getUserTimezone } from 'utils/timezone';
 
 export function getUserTimezone(): string {
   try {
