@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     
     // If this is a password reset, redirect to the sign in page
     if (type === 'recovery') {
-      return NextResponse.redirect(`${baseUrl}/sign-in?message=password_updated`);
+      return NextResponse.redirect(`${baseUrl}/reset-password`);
     }
   }
 

@@ -12,20 +12,22 @@ export default function ForgotPasswordForm() {
   const searchParams = useSearchParams();
   
   // Create the message object based on URL params
-  const message: Message = (() => {
-    const type = searchParams.get("type");
-    const messageText = searchParams.get("message");
-    
-    if (type === "success" && messageText) {
-      return { success: messageText };
-    } else if (type === "error" && messageText) {
-      return { error: messageText };
-    } else if (messageText) {
-      return { message: messageText };
-    }
-    
-    return { message: "" };
-  })();
+    const message: Message = (() => {
+        const type = searchParams.get("type");
+        const messageText = searchParams.get("message")
+        const successText = searchParams.get("success")
+        const errorText = searchParams.get("error")
+
+        if (successText) {
+            return {success: successText};
+        } else if (errorText) {
+            return {error: errorText};
+        } else if (messageText) {
+            return {message: messageText};
+        }
+
+        return {message: ""};
+    })();
   
   return (
     <form className="space-y-4" action={forgotPasswordAction}>
