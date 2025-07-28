@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Trophy, Award, Star, Medal, Target, Zap, Clock, Calendar, Flame, CheckCircle2, Crown, Sparkles, Rocket, BarChart3, BookOpen } from "lucide-react"
 
-import {concatClasses} from "@/utils/helpers";
+import {concatClasses} from "utils/helpers";
 
 interface HabitLog {
   id: string

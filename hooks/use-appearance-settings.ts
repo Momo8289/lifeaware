@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/utils/supabase/client'
+import { supabase } from 'utils/supabase/client'
 
 interface AppearanceSettings {
   fontSize: string
@@ -58,7 +58,7 @@ export function useAppearanceSettings() {
         setSettings(loadedSettings)
         
       } catch (error) {
-        // Fallback to localStorage on error
+        console.error('Failed to load appearance settings, falling back to localStorage:', error);
         const fallbackSettings = loadFromLocalStorage()
         setSettings(fallbackSettings)
       } finally {

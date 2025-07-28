@@ -8,7 +8,7 @@ import { Check, Flame, Settings, CalendarDays, Clock, AlertTriangle, BellIcon, B
 import Link from "next/link"
 import { format, isToday, addDays, isBefore, setHours, setMinutes, parse } from "date-fns"
 import { toast } from "@/components/ui/use-toast"
-import { supabase } from "@/utils/supabase/client"
+import { supabase } from "utils/supabase/client"
 import { useState, useEffect } from "react"
 import { useReminders } from "@/components/providers/ReminderProvider"
 import {
@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {concatClasses} from "@/utils/helpers";
+import {concatClasses} from "utils/helpers";
 
 interface HabitCardProps {
   habit: {
@@ -272,7 +272,7 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
         window.dispatchEvent(new CustomEvent('refresh-reminders'));
       }, 100);
     } catch (error) {
-      // Silent error in production
+      console.error('Failed to remove reminder:', error);
       toast({
         title: "Failed to remove reminder",
         description: "An error occurred while removing the reminder",
@@ -388,7 +388,7 @@ export function HabitCard({ habit, onUpdateStatus, isUpdating }: HabitCardProps)
       
       setDialogOpen(false);
     } catch (error) {
-      // Silent error in production
+      console.error('Failed to update habit dialog:', error);
       toast({
         title: "Failed to create reminder",
         description: "An error occurred while creating the reminder",

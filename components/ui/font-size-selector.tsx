@@ -3,8 +3,8 @@
 import * as React from "react"
 import { Check } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { useAppearanceSettings } from "@/hooks/use-appearance-settings"
-import {concatClasses} from "@/utils/helpers";
+import { useAppearanceSettings } from "hooks/use-appearance-settings"
+import {concatClasses} from "utils/helpers";
 
 interface FontSizeOption {
   name: string
