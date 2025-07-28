@@ -60,6 +60,31 @@ export default function NewMetricPage() {
     is_active: true,
   });
 
+  const handleValueTypeChange = (type: 'number' | 'bloodpressure' | 'bloodsugar') => {
+    handleChange('value_type' , type);
+
+  //data for optional normal range section based on value_type selection
+   switch(type){
+    case('number'):
+      
+      handleChange('normal_range_min', '50');
+      handleChange('normal_range_max', '100');
+      break;
+    
+    case('bloodpressure'):
+
+    handleChange('normal_range_min', '90');
+    handleChange('normal_range_max', '120');
+    break;
+    
+    case('bloodsugar'):
+
+    handleChange('normal_range_min', '70');
+    handleChange('normal_range_max', '130');
+    break;
+    
+   }
+  }
   const handleChange = (field: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -190,7 +215,7 @@ export default function NewMetricPage() {
                 <Label htmlFor="value-type">Value Type *</Label>
                 <Select 
                   value={formData.value_type} 
-                  onValueChange={(value) => handleChange('value_type', value)}
+                  onValueChange={(value) => handleValueTypeChange(value as FormData['value_type'])}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select value type" />
