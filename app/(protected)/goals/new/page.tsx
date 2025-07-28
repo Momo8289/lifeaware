@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from 'utils/supabase/client';
+import { supabase } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -133,7 +133,7 @@ export default function NewGoalPage() {
       });
       router.push('/goals');
     } catch (error: any) {
-      console.error('Failed to create goal:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: typeof error === 'object' && error.message 

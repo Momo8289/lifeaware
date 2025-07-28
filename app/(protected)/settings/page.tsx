@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import * as z from "zod"
-import { supabase } from "utils/supabase/client"
+import { supabase } from "@/utils/supabase/client"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -132,7 +132,7 @@ export default function SettingsProfilePage() {
         description: "Your profile has been updated successfully.",
       })
     } catch (error: any) {
-      console.error('Failed to update profile:', error);
+      // Silent error handling for production
       toast({
         title: "Error updating profile",
         description: error.message || "Something went wrong. Please try again.",

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
-import { supabase } from "utils/supabase/client";
+import { supabase } from "@/utils/supabase/client";
 import { format, isPast, isToday, addDays } from "date-fns";
 
 interface Reminder {
@@ -54,7 +54,7 @@ export default function RemindersPage() {
       
       setReminders(data || []);
     } catch (error) {
-      console.error('Failed to load reminders:', error);
+      // Silent error handling for production
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +85,7 @@ export default function RemindersPage() {
         duration: 3000
       });
     } catch (error) {
-      console.error('Failed to update reminder:', error);
+      // Silent error handling for production
       toast({
         title: "Failed to update reminder",
         description: "An error occurred while updating the reminder status",

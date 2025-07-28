@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from 'utils/supabase/client';
+import { supabase } from '@/utils/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, Scale, Activity, Thermometer, LineChart, Settings, ChevronUp, ChevronDown, Minus } from 'lucide-react';
@@ -110,7 +110,7 @@ export default function MetricsPage() {
             trendData = result.trend || 'unknown';
           }
         } catch (error) {
-          console.error('Failed to load metric stats:', error);
+          // Silent error handling, use default value of 'unknown'
         }
         
         // Get count of logs
@@ -129,7 +129,7 @@ export default function MetricsPage() {
 
       setMetrics(metricsWithStats);
     } catch (error) {
-      console.error('Failed to load metrics:', error);
+      // Silent error handling for production
     } finally {
       setIsLoading(false);
     }

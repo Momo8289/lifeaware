@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from 'utils/supabase/client'
+import { supabase } from '@/utils/supabase/client'
 
 export function useCurrentUserName() {
   const [name, setName] = useState<string | null>(null)

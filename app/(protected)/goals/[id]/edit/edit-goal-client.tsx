@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from 'utils/supabase/client';
+import { supabase } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -95,7 +95,7 @@ export default function EditGoalForm({ goalId }: EditGoalFormProps) {
           is_completed: data.is_completed,
         });
       } catch (error) {
-        console.error('Failed to load goal details for editing:', error);
+        // Silent error handling for production
         toast({
           title: "Error",
           description: "Failed to load goal details",
@@ -176,7 +176,7 @@ export default function EditGoalForm({ goalId }: EditGoalFormProps) {
       });
       router.push(`/goals/${goalId}`);
     } catch (error: any) {
-      console.error('Failed to update goal:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: typeof error === 'object' && error.message 

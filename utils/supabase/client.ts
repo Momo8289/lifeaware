@@ -11,13 +11,13 @@ export async function logoutUser() {
   try {
     await supabase.auth.signOut({ scope: 'local' });
   } catch (e) {
-    console.error('Failed to sign out from Supabase:', e);
+    // Silent error in production
   }
 
   try {
     await clearAuthDataFromStorage();
   } catch (e) {
-    console.error('Failed to clear auth storage:', e);
+    // Silent error in production
   }
 }
 
@@ -62,13 +62,13 @@ export async function clearAuthDataFromStorage() {
       try {
         localStorage.removeItem(`sb-${projectId}-auth-token`);
       } catch (e) {
-        console.error('Failed to remove auth token from localStorage:', e);
+        // Silent error in production
       }
     }
     
     return true;
   } catch (e) {
-    console.error('Failed to clear auth data from storage:', e);
+    // Silent error in production
     return false;
   }
 }

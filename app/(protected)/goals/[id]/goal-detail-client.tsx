@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from 'utils/supabase/client';
+import { supabase } from '@/utils/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -170,7 +170,7 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
           days_remaining: daysRemaining
         });
       } catch (error) {
-        console.error('Failed to load goal details:', error);
+        // Silent error handling for production
         toast({
           title: "Error",
           description: "Failed to load goal details",
@@ -202,7 +202,7 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
       });
       router.push('/goals');
     } catch (error) {
-      console.error('Failed to delete goal:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: "Failed to delete goal",
@@ -249,7 +249,7 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
       // Refresh the page to update data
       window.location.reload();
     } catch (error) {
-      console.error('Failed to log progress:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: "Failed to log progress",
@@ -316,7 +316,7 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
       // Refresh the page to update data
       window.location.reload();
     } catch (error) {
-      console.error('Failed to add milestone:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: "Failed to add milestone",
@@ -353,7 +353,7 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
         description: `Milestone marked as ${newStatus ? 'completed' : 'incomplete'}`
       });
     } catch (error) {
-      console.error('Failed to update milestone status:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: "Failed to update milestone status",

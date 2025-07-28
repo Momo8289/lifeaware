@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from 'utils/supabase/client';
+import { supabase } from '@/utils/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, Target, Timer, CalendarClock, LineChart, Trophy } from 'lucide-react';
@@ -103,7 +103,6 @@ export default function GoalsPage() {
 
         setGoals(goalsWithStats);
       } catch (error) {
-        console.error('Failed to load goals:', error);
         // Silent error handling for production
       } finally {
         setIsLoading(false);

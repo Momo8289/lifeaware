@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from 'utils/supabase/client';
+import { supabase } from '@/utils/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,9 +29,9 @@ import { HabitProgressChart } from '@/components/habits/HabitProgressChart';
 import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
 import { Progress } from '@/components/ui/progress';
-import { useUserTimezone } from 'hooks/useUserTimezone';
-import { getTodayInTimezone, formatDateInTimezone } from 'utils/timezone';
-import {concatClasses} from "utils/helpers";
+import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { getTodayInTimezone, formatDateInTimezone } from '@/utils/timezone';
+import {concatClasses} from "@/utils/helpers";
 
 // Custom styles for the heatmap grid
 const styles = `
@@ -184,11 +184,11 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
           }
         }
       } catch (error) {
-        console.error('Failed to load habit stats:', error);
+        // Silent error handling
       }
 
     } catch (error: any) {
-      console.error('Failed to load habit details:', error);
+      // Silent error handling for production
     } finally {
       setIsLoading(false);
     }
@@ -305,7 +305,7 @@ export default function HabitDetailPage({ params }: { params: Promise<{ id: stri
       }
       
     } catch (error: any) {
-      console.error('Failed to complete habit action:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: error.message || "Failed to update habit status",

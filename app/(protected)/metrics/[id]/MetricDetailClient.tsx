@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from 'utils/supabase/client';
+import { supabase } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -93,7 +93,7 @@ export default function MetricDetailClient({ id }: { id: string }) {
       // Fetch logs based on time range
       await fetchLogs();
     } catch (error) {
-      console.error('Failed to load metric data:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: "Failed to load metric data",
@@ -137,7 +137,7 @@ export default function MetricDetailClient({ id }: { id: string }) {
       
       setLogs(logsData || []);
     } catch (error) {
-      console.error('Failed to load metric logs:', error);
+      // Silent error handling for production
     }
   };
 
@@ -232,7 +232,7 @@ export default function MetricDetailClient({ id }: { id: string }) {
       // Refresh logs
       fetchLogs();
     } catch (error: any) {
-      console.error('Failed to log measurement:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: typeof error === 'object' && error.message 
@@ -262,7 +262,7 @@ export default function MetricDetailClient({ id }: { id: string }) {
       // Refresh logs
       fetchLogs();
     } catch (error) {
-      console.error('Failed to delete log entry:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: "Failed to delete log entry",
@@ -293,7 +293,7 @@ export default function MetricDetailClient({ id }: { id: string }) {
       
       router.push('/metrics');
     } catch (error) {
-      console.error('Failed to delete metric:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: "Failed to delete metric",

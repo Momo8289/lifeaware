@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from 'utils/supabase/client'
+import { supabase } from '@/utils/supabase/client'
 
 export function useCurrentUserImage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -37,7 +37,7 @@ export function useCurrentUserImage() {
             }
           }
         } catch (error) {
-          console.error('Failed to load user avatar:', error);
+          // Silent error handling for production
         }
       }
     }

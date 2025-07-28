@@ -5,12 +5,12 @@ import { HeartPulse } from 'lucide-react';
 import Link from 'next/link';
 import AuthLayout from '../auth-layout';
 import { Button } from '@/components/ui/button';
-import { supabase } from 'utils/supabase/client';
+import { supabase } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/use-toast';
 import MicrosoftLogo from '@/components/icons/microsoft-logo';
 import GoogleLogo from '@/components/icons/google-logo';
-import { getURL } from 'utils/helpers';
+import { getURL } from '@/utils/helpers';
 
 export default function SignUpPage() {
   const [name, setName] = useState('');

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from 'utils/supabase/client';
+import { supabase } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -126,7 +126,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
           });
         }
       } catch (error) {
-        console.error('Failed to load habit data for editing:', error);
+        // Silent error handling for production
         toast({
           title: "Error",
           description: "Failed to load habit data",
@@ -191,7 +191,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
       });
       router.push(`/habits/${id}`);
     } catch (error: any) {
-      console.error('Failed to update habit:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: error.message || "Failed to update habit",
@@ -220,7 +220,7 @@ export default function EditHabitPage({ params }: { params: Promise<{ id: string
       });
       router.push('/habits');
     } catch (error: any) {
-      console.error('Failed to delete habit:', error);
+      // Silent error handling for production
       toast({
         title: "Error",
         description: error.message || "Failed to delete habit",

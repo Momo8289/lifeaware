@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { supabase, handleAccountDeletion } from "utils/supabase/client"
+import { supabase, handleAccountDeletion } from "@/utils/supabase/client"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -183,7 +183,7 @@ export default function AccountPage() {
         .map((result: any) => result.reason)
       
       if (errors.length > 0) {
-        
+        // Silent error handling for production
         throw errors[0]
       }
       
@@ -192,7 +192,7 @@ export default function AccountPage() {
         description: "Your account information has been updated successfully.",
       })
     } catch (error: any) {
-      console.error('Failed to update account:', error);
+      // Silent error handling for production
       toast({
         title: "Error updating account",
         description: error.message || "Something went wrong. Please try again.",
@@ -254,7 +254,7 @@ export default function AccountPage() {
         handleAccountDeletion();
       }, 1000)
     } catch (error: any) {
-      console.error('Failed to delete account:', error);
+      // Silent error handling for production
       toast({
         title: "Error deleting account",
         description: error.message || "Something went wrong. Please try again.",
