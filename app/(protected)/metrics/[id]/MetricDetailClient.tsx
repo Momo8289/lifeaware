@@ -128,7 +128,6 @@ export default function MetricDetailClient({ id }: { id: string }) {
         .select('*')
         .eq('metric_template_id', id)
         .gte('recorded_at', startOfDay(startDate).toISOString())
-        // .lte('recorded_at', endOfDay(new Date()).toISOString())
         .order('recorded_at', { ascending: true });
 
       if (logsError) throw logsError;
