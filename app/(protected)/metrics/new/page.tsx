@@ -135,12 +135,11 @@ export default function NewMetricPage() {
           description: formData.description,
           unit: formData.unit,
           value_type: formData.value_type,
-          normal_range_min,
-          normal_range_max,
+          base_min: normal_range_min,
+          base_max: normal_range_max,
           target_min,
           target_max,
           is_active: formData.is_active,
-          is_custom: true,
         })
         .select();
 
@@ -156,6 +155,7 @@ export default function NewMetricPage() {
       router.push('/metrics');
     } catch (error: any) {
       // Silent error handling for production
+      console.error(error)
       toast({
         title: "Error",
         description: typeof error === 'object' && error.message 
