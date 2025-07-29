@@ -154,7 +154,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
           : 0;
         
         // Calculate days remaining
-        const deadlineDate = new Date(goalData.deadline);
+        const deadlineDate = new Date(goalData.deadline)
         const today = new Date();
         const timeDiff = deadlineDate.getTime() - today.getTime();
         const daysRemaining = Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
