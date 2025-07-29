@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
+import Link from "next/link";
 
 export function StatsTimeline (){
 return (
@@ -25,14 +26,16 @@ export default function JournalPage() {
     <div className="container py-6">
     <div className="flex justify-between">
       <h1 className="text-3xl font-bold">My Journal</h1>
-      <Button> + New Journal</Button>
+      <Link href="/journal/new">
+        <Button>+ New Journal Entry</Button>
+    </Link>
       </div>
     </div>
  <StatsTimeline/>
- <div className= "container flex justify-between h-36">
- <Card className="w-1/3 text-center p-7  border-white border-solid border-2">Calories</Card>
- <Card className="w-1/3 text-center p-7  border-white border-solid border-2">???</Card>
- <Card className="w-1/3 text-center p-7  border-white border-solid border-2">Water Drunk</Card>
+ <div className= "grid grid-cols-1 md:grid-cols-3 gap-4">
+ <Card className="text-center p-7  border-white border-solid border-2">Calories</Card>
+ <Card className="text-center p-7  border-white border-solid border-2">???</Card>
+ <Card className=" text-center p-7  border-white border-solid border-2">Water Drunk</Card>
  </div>
  <MacrosDashboard/>
   </>

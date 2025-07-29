@@ -1,0 +1,1 @@
+//actual landing page fopr journal here
