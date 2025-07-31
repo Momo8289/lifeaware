@@ -47,7 +47,7 @@ interface Goal {
   metric: string;
   target_value: number;
   current_value: number;
-  deadline: string;
+  target_date: string;
   start_date: string;
   is_completed: boolean;
   is_active: boolean;
@@ -100,16 +100,6 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
   const [newLogValue, setNewLogValue] = useState<number>(0);
   const [newLogNotes, setNewLogNotes] = useState<string>('');
   const [isSubmittingLog, setIsSubmittingLog] = useState(false);
-  
-  // New milestone form state
-  const [newMilestone, setNewMilestone] = useState({
-    title: '',
-    description: '',
-    target_date: new Date().toISOString().split('T')[0],
-    target_value: 0,
-  });
-  const [isSubmittingMilestone, setIsSubmittingMilestone] = useState(false);
-  const [showMilestoneForm, setShowMilestoneForm] = useState(false);
 
   useEffect(() => {
     const fetchGoalData = async () => {
@@ -260,108 +250,6 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
     }
   };
 
-  const handleMilestoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!newMilestone.title) {
-      toast({
-        title: "Error",
-        description: "Milestone title is required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (newMilestone.target_value < 0) {
-      toast({
-        title: "Error",
-        description: "Target value cannot be negative",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      setIsSubmittingMilestone(true);
-      
-      // Insert the milestone
-      const { error } = await supabase
-        .from('goal_milestones')
-        .insert({
-          goal_id: goalId,
-          title: newMilestone.title,
-          description: newMilestone.description || null,
-          target_date: newMilestone.target_date,
-          target_value: newMilestone.target_value,
-          is_completed: false
-        });
-
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Milestone added successfully!"
-      });
-      
-      // Reset form
-      setNewMilestone({
-        title: '',
-        description: '',
-        target_date: new Date().toISOString().split('T')[0],
-        target_value: 0,
-      });
-      
-      setShowMilestoneForm(false);
-      
-      // Refresh the page to update data
-      window.location.reload();
-    } catch (error) {
-      // Silent error handling for production
-      toast({
-        title: "Error",
-        description: "Failed to add milestone",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmittingMilestone(false);
-    }
-  };
-
-  const toggleMilestoneStatus = async (milestone: GoalMilestone) => {
-    try {
-      const newStatus = !milestone.is_completed;
-      
-      const { error } = await supabase
-        .from('goal_milestones')
-        .update({ is_completed: newStatus })
-        .eq('id', milestone.id);
-
-      if (error) throw error;
-      
-      // Update local state
-      if (goal) {
-        setGoal({
-          ...goal,
-          milestones: goal.milestones.map(m => 
-            m.id === milestone.id ? { ...m, is_completed: newStatus } : m
-          )
-        });
-      }
-      
-      toast({
-        title: "Success",
-        description: `Milestone marked as ${newStatus ? 'completed' : 'incomplete'}`
-      });
-    } catch (error) {
-      // Silent error handling for production
-      toast({
-        title: "Error",
-        description: "Failed to update milestone status",
-        variant: "destructive"
-      });
-    }
-  };
-
   const progressColor = () => {
     if (!goal) return 'bg-primary';
     
@@ -369,7 +257,7 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
       return 'bg-success';
     }
     
-    const deadlineDate = new Date(goal.deadline);
+    const deadlineDate = new Date(goal.target_date);
     const now = new Date();
     const isPastDeadline = now > deadlineDate;
     
@@ -492,7 +380,7 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
                 <div className="text-sm text-muted-foreground">Deadline</div>
                 <div className="text-2xl font-bold flex items-center">
                   <CalendarClock className="mr-2 h-5 w-5" />
-                  {format(new Date(goal.deadline), 'MMM d, yyyy')}
+                  {format(new Date(goal.target_date), 'MMM d, yyyy')}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {goal.days_remaining > 0 
@@ -576,127 +464,6 @@ export default function GoalDetailClient({ goalId }: GoalDetailClientProps) {
               </form>
             </CardContent>
           </Card>
-        </TabsContent>
-        
-        <TabsContent value="milestones" className="space-y-6 mt-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Milestones</h3>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setShowMilestoneForm(!showMilestoneForm)}
-            >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              {showMilestoneForm ? "Cancel" : "Add Milestone"}
-            </Button>
-          </div>
-          
-          {showMilestoneForm && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Add New Milestone</CardTitle>
-                <CardDescription>
-                  Create smaller targets to help you reach your goal
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleMilestoneSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="milestone-title">Milestone Title *</Label>
-                    <Input
-                      id="milestone-title"
-                      placeholder="e.g., Complete first 10 pages"
-                      value={newMilestone.title}
-                      onChange={(e) => setNewMilestone({...newMilestone, title: e.target.value})}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="milestone-description">Description (Optional)</Label>
-                    <Textarea
-                      id="milestone-description"
-                      placeholder="Add more details about this milestone"
-                      value={newMilestone.description}
-                      onChange={(e) => setNewMilestone({...newMilestone, description: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="milestone-target-date">Target Date *</Label>
-                      <Input
-                        id="milestone-target-date"
-                        type="date"
-                        value={newMilestone.target_date}
-                        onChange={(e) => setNewMilestone({...newMilestone, target_date: e.target.value})}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="milestone-target-value">
-                        Target Value ({goal.metric}) *
-                      </Label>
-                      <Input
-                        id="milestone-target-value"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={newMilestone.target_value}
-                        onChange={(e) => setNewMilestone({
-                          ...newMilestone, 
-                          target_value: parseFloat(e.target.value) || 0
-                        })}
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <Button type="submit" disabled={isSubmittingMilestone}>
-                    {isSubmittingMilestone ? "Saving..." : "Add Milestone"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          )}
-          
-          {goal.milestones.length > 0 ? (
-            <div className="space-y-4">
-              {goal.milestones.map((milestone) => (
-                <Card key={milestone.id}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg flex items-center">
-                        <Milestone className="h-5 w-5 mr-2" />
-                        {milestone.title}
-                      </CardTitle>
-                      <Switch
-                        checked={milestone.is_completed}
-                        onCheckedChange={() => toggleMilestoneStatus(milestone)}
-                      />
-                    </div>
-                    <CardDescription>
-                      Target: {milestone.target_value} {goal.metric} by {format(new Date(milestone.target_date), 'MMM d, yyyy')}
-                    </CardDescription>
-                  </CardHeader>
-                  {milestone.description && (
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">
-                        {milestone.description}
-                      </p>
-                    </CardContent>
-                  )}
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="py-6 text-center text-muted-foreground">
-                No milestones created yet. Add some milestones to track your progress in smaller steps.
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
         
         <TabsContent value="logs" className="space-y-6 mt-6">

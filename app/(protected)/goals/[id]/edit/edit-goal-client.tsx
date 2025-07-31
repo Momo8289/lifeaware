@@ -23,7 +23,7 @@ interface FormData {
   category: string;
   metric: string;
   target_value: number;
-  deadline: Date;
+  target_date: Date;
   is_active: boolean;
   is_completed: boolean;
 }
@@ -56,7 +56,7 @@ export default function EditGoalForm({ goalId }: EditGoalFormProps) {
     category: '',
     metric: '',
     target_value: 0,
-    deadline: new Date(),
+    target_date: new Date(),
     is_active: true,
     is_completed: false,
   });
@@ -90,11 +90,12 @@ export default function EditGoalForm({ goalId }: EditGoalFormProps) {
           category: data.category || '',
           metric: data.metric,
           target_value: data.target_value,
-          deadline: parseISO(data.deadline),
+          target_date: parseISO(data.target_date),
           is_active: data.is_active,
           is_completed: data.is_completed,
         });
       } catch (error) {
+        console.error(error)
         // Silent error handling for production
         toast({
           title: "Error",
@@ -148,7 +149,7 @@ export default function EditGoalForm({ goalId }: EditGoalFormProps) {
       setIsSubmitting(true);
 
       // Format the date for Supabase
-      const formattedDeadline = format(formData.deadline, 'yyyy-MM-dd');
+      const formattedDeadline = format(formData.target_date, 'yyyy-MM-dd');
       
       // Update the goal
       const { error } = await supabase
@@ -159,7 +160,7 @@ export default function EditGoalForm({ goalId }: EditGoalFormProps) {
           category: formData.category || null,
           metric: formData.metric,
           target_value: formData.target_value,
-          deadline: formattedDeadline,
+          target_date: formattedDeadline,
           is_active: formData.is_active,
           is_completed: formData.is_completed,
         })
@@ -293,14 +294,14 @@ export default function EditGoalForm({ goalId }: EditGoalFormProps) {
                     className="w-full justify-start text-left font-normal"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.deadline ? format(formData.deadline, 'PPP') : "Select date"}
+                    {formData.target_date ? format(formData.target_date, 'PPP') : "Select date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
-                    selected={formData.deadline}
-                    onSelect={(date) => date && handleChange('deadline', date)}
+                    selected={formData.target_date}
+                    onSelect={(date) => date && handleChange('target_date', date)}
                     initialFocus
                   />
                 </PopoverContent>
