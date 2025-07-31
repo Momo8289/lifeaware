@@ -1,6 +1,6 @@
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getURL } from "@/utils/helpers";
+import { getURL } from "utils/helpers";
 
 export async function GET(request: Request) {
   // The `/auth/callback` route is required for the server-side auth flow implemented
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     
     // If this is a password reset, redirect to the sign in page
     if (type === 'recovery') {
-      return NextResponse.redirect(`${baseUrl}/sign-in?message=password_updated`);
+      return NextResponse.redirect(`${baseUrl}/reset-password`);
     }
   }
 

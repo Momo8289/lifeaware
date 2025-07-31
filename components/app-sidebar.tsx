@@ -26,9 +26,8 @@ import {
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useCurrentUserName } from "@/hooks/use-current-user-name"
-import { supabase } from "@/utils/supabase/client"
+import {supabase} from "@/utils/supabase/client";
 import { createRobustSubscription } from "@/utils/supabase/realtime"
-
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
@@ -97,6 +96,7 @@ const data = {
     },
   ],
 }
+let intervalId: NodeJS.Timeout | null=null;
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
@@ -106,11 +106,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     avatar: ""
   })
   const [reminderCount, setReminderCount] = React.useState<number>(0)
-
+  
   React.useEffect(() => {
     async function getUserData() {
       const { data: { user: authUser } } = await supabase.auth.getUser()
-
+      
       if (authUser) {
         setUser({
           name: authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || 'User',
@@ -119,16 +119,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         })
       }
     }
-
+    
     getUserData()
   }, [])
-
+  
   // Fetch the count of active reminders
   React.useEffect(() => {
-    let cleanupFunction: (() => void) | undefined;
-    
+   
+
+    let cleanupFunction: (() => void);
+  
+
     const fetchReminderCount = async () => {
       try {
+        
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
@@ -140,32 +144,37 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         if (error) throw error;
         setReminderCount(count || 0);
       } catch (error) {
-        // Silent error handling for production
+        console.error('Failed to load reminder count:', error);
+        setReminderCount(0); // Fallback so UI doesn't break
+
       }
     };
 
+    const setup = async () => {
     // Only run in protected routes where the pathname indicates a logged-in user
     // This is a quick way to prevent this from running on the landing page
     if (!pathname || pathname === '/' || pathname.startsWith('/sign-')) {
+     
       return; // Don't set up any listeners for non-app routes
     }
 
     // Check if user is authenticated before setting up listeners
-    const checkAuthAndSetupListeners = async () => {
-      try {
         const { data: { user } } = await supabase.auth.getUser();
-        
         // If no user is authenticated, don't set up any listeners
         if (!user) return;
         
         // Fetch initial count
-        fetchReminderCount();
-
+        await fetchReminderCount();
+        
         // Listen for the custom refresh event
-        window.addEventListener('refresh-reminders', fetchReminderCount);
+        const handleRefreshReminders = () => {
+        
+          fetchReminderCount();
+        };
+        
+        window.addEventListener('refresh-reminders', handleRefreshReminders);
 
         // Set up robust subscription with our new helper
-        // TODO: createRobustSubscription doesn't actually return a cleanup function.
         cleanupFunction = createRobustSubscription(
           supabase,
           user.id,
@@ -173,37 +182,45 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           fetchReminderCount,
           'status=eq.active'
         );
-        
-        // Update cleanup to include event listener and interval
-        const originalCleanup = cleanupFunction;
-        cleanupFunction = () => {
-          window.removeEventListener('refresh-reminders', fetchReminderCount);
-          if (originalCleanup) originalCleanup();
-        };
-      } catch (err) {
-        // Silent error handling for production
+
+        if (!intervalId){
+        // Add manual refresh interval as a fallback
+         intervalId = setInterval(()=> {
+          fetchReminderCount();
+        }, 30000);
       }
-    };
+      };
+        setup();
 
-    // Start the authentication check and listener setup
-    checkAuthAndSetupListeners();
-
-    // Return cleanup function
-    return () => {
-      if (cleanupFunction) cleanupFunction();
-    };
+        return () => {
+        
+        
+        
+        if (intervalId){
+          clearInterval(intervalId);
+       
+          intervalId = null;
+        }
+        if (cleanupFunction){
+          
+          cleanupFunction();
+          
+        }
+        window.removeEventListener('refresh-reminders', fetchReminderCount);
+      };
+    
   }, [pathname]);
-
+  
   // Create a new array with isActive property set based on current path
   const navMainWithActive = React.useMemo(() => {
     return data.navMain.map(item => ({
       ...item,
-      isActive: item.title === "Habits"
+      isActive: item.title === "Habits" 
         ? pathname === item.url || pathname.startsWith(`${item.url}/`)
         : pathname === item.url
     }))
   }, [pathname])
-
+  
   // Create navSecondary with isActive for settings pages and update reminder badge
   const navSecondaryWithActive = React.useMemo(() => {
     return data.navSecondary.map(item => {
@@ -214,16 +231,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           isActive: pathname === item.url || pathname.startsWith(`${item.url}/`)
         };
       }
-
+      
       return {
         ...item,
-        isActive: item.title === "Settings"
-          ? pathname === "/settings" || pathname.startsWith("/settings/")
+        isActive: item.title === "Settings" 
+          ? pathname === "/settings" || pathname.startsWith("/settings/") 
           : pathname === item.url
       };
     });
   }, [pathname, reminderCount]);
-
+  
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>

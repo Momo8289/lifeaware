@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { getTodayInTimezone } from '@/utils/timezone';
+import { getTodayInTimezone } from 'utils/timezone';
 
 export async function POST(request: NextRequest) {
   try {
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
           .lte('completed_at', endOfDay.toISOString());
       }
     } catch (error) {
-      // Don't fail the habit completion if reminder update fails
+      console.error('Failed to update reminders for habit completion:', error);
       console.error('Failed to update reminders:', error);
     }
 

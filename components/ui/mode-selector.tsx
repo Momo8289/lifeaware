@@ -3,12 +3,12 @@
 import * as React from "react"
 import { Monitor, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
-import { useAppearanceSettings } from "@/hooks/use-appearance-settings"
+import { useAppearanceSettings } from "hooks/use-appearance-settings"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
-import {concatClasses} from "@/utils/helpers";
+import {concatClasses} from "utils/helpers";
 
 const modes = [
   {

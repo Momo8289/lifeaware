@@ -4,7 +4,7 @@ import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 
-import {concatClasses} from "@/utils/helpers";
+import {concatClasses} from "utils/helpers";
 
 const TooltipProvider = TooltipPrimitive.Provider
 

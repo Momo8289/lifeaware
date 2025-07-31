@@ -1,7 +1,7 @@
 import * as React from "react"
 
 
-import {concatClasses} from "@/utils/helpers";
+import {concatClasses} from "utils/helpers";
 
 const Textarea = React.forwardRef<
   HTMLTextAreaElement,

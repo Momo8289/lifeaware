@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useUserTimezone } from '@/hooks/useUserTimezone';
-import { checkAndUpdateReminders, markHabitCompleted, dismissReminder as dismissReminderUtil, getAllActiveReminders } from '@/utils/reminders';
+import { useUserTimezone } from 'hooks/useUserTimezone';
+import { checkAndUpdateReminders, markHabitCompleted, dismissReminder as dismissReminderUtil, getAllActiveReminders } from 'utils/reminders';
 import { toast } from '@/components/ui/use-toast';
 import { Bell, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';

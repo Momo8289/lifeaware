@@ -1,4 +1,4 @@
-import {concatClasses} from "@/utils/helpers";
+import {concatClasses} from "utils/helpers";
 
 function Skeleton({
   className,
