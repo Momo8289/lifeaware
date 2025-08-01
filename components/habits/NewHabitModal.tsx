@@ -40,7 +40,7 @@ interface HabitCategory {
 interface NewHabitModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onHabitCreated: () => void;
+  onHabitCreated: (habit: any) => void;
 }
 
 const timesOfDay = [
@@ -180,6 +180,12 @@ export function NewHabitModal({ open, onOpenChange, onHabitCreated }: NewHabitMo
         title: "Success",
         description: "Habit created successfully!",
       });
+
+      if (data && data[0]) {
+        onHabitCreated(data[0]);
+      } else {
+        onHabitCreated(null);
+      }
       
       // Reset form
       setFormData({
@@ -194,7 +200,7 @@ export function NewHabitModal({ open, onOpenChange, onHabitCreated }: NewHabitMo
       });
       
       setShowCategoryManager(false);
-      onHabitCreated();
+      onHabitCreated(data && data[0]);
       onOpenChange(false);
     } catch (error: any) {
       toast({
