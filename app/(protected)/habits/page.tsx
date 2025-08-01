@@ -294,9 +294,6 @@ export default function HabitsPage() {
         window.dispatchEvent(new CustomEvent('refresh-reminders'));
       }
       
-      // Refresh habits to get updated streak info
-      fetchHabits();
-      
       toast({
         title: result.action === 'removed' ? "Status cleared" : "Habit updated",
         description: result.action === 'removed' 
@@ -317,8 +314,13 @@ export default function HabitsPage() {
     }
   };
 
-  const handleHabitCreated = () => {
-    fetchHabits(); // Refresh the habits list
+    
+  const handleHabitCreated = (newHabit: HabitWithStats) => {
+    setHabits(prev =>
+      newHabit && !prev.some(h => h.id === newHabit.id)
+        ? [newHabit, ...prev]
+        : prev
+    );
   };
 
   const handleNewHabitClick = () => {
