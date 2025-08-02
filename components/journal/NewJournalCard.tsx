@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { DatePicker } from "../ui/date-picker";
+import { setMinutes } from "date-fns";
 
 interface FoodItem {
   fdcId: string;
@@ -28,16 +29,20 @@ function TimeSelect({
     setHour,
     ampm,
     setAmpm,
+    minute,
+    setMinute
   }: {
     hour: string
     setHour: (val: string) => void
     ampm: string
     setAmpm: (val: string) => void
+    minute: string
+    setMinute: (val: string) => void
   }) {
     return (
       <div className="flex gap-2 mt-4">
         <Select onValueChange={setHour} value={hour}>
-          <SelectTrigger className="w-[80px]">
+          <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Hour" />
           </SelectTrigger>
           <SelectContent>
@@ -49,7 +54,23 @@ function TimeSelect({
           </SelectContent>
         </Select>
         
-        
+        <Select onValueChange={setMinute} value={minute}>
+            <SelectTrigger>
+                <SelectValue placeholder="minute"/>
+            </SelectTrigger>
+            <SelectContent>
+                {[0, 15, 30, 45].map((val) => {
+                const padded = val.toString().padStart(2, '0');
+                return (
+                    <SelectItem key={val} value={padded}>
+                    {padded}
+                    </SelectItem>
+                     );
+                })}
+          </SelectContent>
+          
+        </Select>
+
         <Select onValueChange={setAmpm} value={ampm}>
           <SelectTrigger className="w-[70px]">
             <SelectValue placeholder="AM/PM" />
@@ -70,6 +91,7 @@ function NewJournalCard() {
   const [meal, setMeal] = useState<FoodItem[]>([]);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [hour, setHour] = useState("")
+  const [minute, setMinute] = useState("")
   const [ampm, setAmpm] = useState("")
   const [mealType, setMealType] = useState("")
 
@@ -113,7 +135,7 @@ function NewJournalCard() {
             </Select>
             <div className="timeDateSelect container">
             <DatePicker date={date} setDate={setDate} />
-            <TimeSelect hour={hour} setHour={setHour} ampm={ampm} setAmpm={setAmpm}  />
+            <TimeSelect hour={hour} setHour={setHour} ampm={ampm} setAmpm={setAmpm} minute={minute} setMinute={setMinute}  />
             </div>
           </div>
   
@@ -191,8 +213,44 @@ function NewJournalCard() {
         </form>
       </CardContent>
     </Card>
-    <Button className="" onClick={(e) => sessionStorage.SetItem("foodJournal",["meal", {meal}, "date", {date}, "hour", {hour}, "amPm", {ampm}, "meal type", {mealType}])}> Save Meal</Button>
-    </>
+    <div className="flex justify-between p-2">
+    <Button
+  onClick={() => {
+    const newEntry = {
+      meal,
+      date,
+      hour,
+      minute,
+      ampm,
+      mealType,
+    };
+
+    const existing = sessionStorage.getItem("foodJournal");
+
+    let journal: any[] = [];
+
+    if (existing) {
+      try {
+        const parsed = JSON.parse(existing);
+        journal = Array.isArray(parsed) ? parsed : [parsed]; // force array
+      } catch (e) {
+        console.error("Could not parse existing foodJournal:", e);
+      }
+    }
+
+    journal.push(newEntry);
+
+    sessionStorage.setItem("foodJournal", JSON.stringify(journal));
+
+    console.log("Meal saved!", journal);
+  }}
+>
+  Save Meal
+</Button>
+
+<Button>New Meal</Button>
+</div>
+ </>
   );
   
 }
