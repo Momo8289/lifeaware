@@ -112,7 +112,7 @@ function NewJournalCard() {
 
     const fetchFoods = async () => {
       const response = await fetch(
-        `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=frDJLeme4MAniWJqR0yFB9DELI5k2IVoD4cJbH0y&query=${encodeURIComponent(
+        `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(
           query
         )}`
       );
