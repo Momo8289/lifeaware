@@ -95,6 +95,18 @@ function NewJournalCard() {
   const [ampm, setAmpm] = useState("")
   const [mealType, setMealType] = useState("")
 
+  const resetFields = () => {
+    setQuery("");
+    setSelectedFdcId("");
+    setFoods([]);
+    setMeal([]);
+    setDate(new Date());
+    setHour("");
+    setMinute("");
+    setAmpm("");
+    setMealType("");
+  };
+
   useEffect(() => {
     if (!query) return;
 
@@ -248,7 +260,7 @@ function NewJournalCard() {
   Save Meal
 </Button>
 
-<Button>New Meal</Button>
+<Button  variant="secondary" onClick={resetFields}>New Meal</Button>
 </div>
  </>
   );
