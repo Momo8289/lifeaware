@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import {Card} from "@/components/ui/card";
 import Link from "next/link";
 import JournalDashboard from "@/components/journal/JournalDashboard";
+import CaloriesToday from "@/components/journal/CaloriesToday";
 
 
 export default function JournalPage() {
@@ -19,7 +20,9 @@ export default function JournalPage() {
     </div>
  <JournalDashboard />
  <div className= "grid grid-cols-1 md:grid-cols-3 gap-4">
- <Card className="text-center p-7  border-white border-solid border-2">Calories</Card>
+ <Card className="caloriesRadial">
+  <CaloriesToday />
+ </Card>
  <Card className="text-center p-7  border-white border-solid border-2">???</Card>
  <Card className=" text-center p-7  border-white border-solid border-2">Water Drunk</Card>
  </div>
