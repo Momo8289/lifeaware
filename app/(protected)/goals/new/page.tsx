@@ -24,7 +24,7 @@ interface FormData {
   category: string;
   metric: string;
   target_value: number;
-  deadline: Date;
+  target_date: Date;
   start_date: Date;
   is_active: boolean;
 }
@@ -73,7 +73,7 @@ export default function NewGoalPage() {
     category: initialGoalCategories[0].name, // Default to the first initial category
     metric: '',
     target_value: 0,
-    deadline: new Date(new Date().setMonth(new Date().getMonth() + 3)),
+    target_date: new Date(new Date().setMonth(new Date().getMonth() + 3)), // Default to 3 months from now
     start_date: new Date(),
     is_active: true,
   });
@@ -321,8 +321,9 @@ export default function NewGoalPage() {
       }
 
       const formattedStartDate = format(formData.start_date, 'yyyy-MM-dd');
-      const formattedDeadline = format(formData.deadline, 'yyyy-MM-dd');
-
+      const formattedDeadline = format(formData.target_date, 'yyyy-MM-dd');
+     
+      // Insert the new goal
       const { data, error } = await supabase
         .from('goals')
         .insert({
@@ -332,7 +333,7 @@ export default function NewGoalPage() {
           category: formData.category || null, // Ensure category is set or null
           metric: formData.metric,
           target_value: formData.target_value,
-          deadline: formattedDeadline,
+          target_date: formattedDeadline,
           start_date: formattedStartDate,
           is_active: formData.is_active,
           current_value: 0,
@@ -614,14 +615,14 @@ export default function NewGoalPage() {
                       className="w-full justify-start text-left font-normal"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.deadline ? format(formData.deadline, 'PPP') : "Select date"}
+                      {formData.target_date ? format(formData.target_date, 'PPP') : "Select date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 z-[101]">
                     <Calendar
                       mode="single"
-                      selected={formData.deadline}
-                      onSelect={(date) => date && handleChange('deadline', date)}
+                      selected={formData.target_date}
+                      onSelect={(date) => date && handleChange('target_date', date)}
                       initialFocus
                       disabled={(date) => date < new Date()}
                     />

@@ -20,7 +20,7 @@ interface Goal {
   metric: string;
   target_value: number;
   current_value: number;
-  deadline: string;
+  target_date: string;
   start_date: string;
   is_completed: boolean;
   is_active: boolean;
@@ -75,7 +75,7 @@ export default function GoalsPage() {
             : 0;
           
           // Calculate days remaining
-          const deadlineDate = new Date(goal.deadline);
+          const deadlineDate = new Date(goal.target_date);
           const today = new Date();
           const timeDiff = deadlineDate.getTime() - today.getTime();
           const daysRemaining = Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
@@ -209,8 +209,8 @@ function StatsCard({ title, value, icon }: { title: string; value: string; icon:
 }
 
 function GoalCard({ goal }: { goal: GoalWithStats }) {
-  const deadlineDate = new Date(goal.deadline);
-  const formattedDeadline = new Intl.DateTimeFormat('en-US', { 
+  const deadlineDate = new Date(goal.target_date)
+  const formattedDeadline = new Intl.DateTimeFormat('en-US', {
     year: 'numeric', 
     month: 'short', 
     day: 'numeric' 

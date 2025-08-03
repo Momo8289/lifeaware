@@ -13,13 +13,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
 import { Switch } from '@/components/ui/switch';
-import { 
-  ArrowLeft, 
-  PencilIcon, 
-  TrashIcon, 
-  Target, 
-  CalendarClock, 
-  BarChart4, 
+import {
+  ArrowLeft,
+  PencilIcon,
+  TrashIcon,
+  Target,
+  CalendarClock,
+  BarChart4,
   Milestone,
   PlusIcon,
   CheckCircle,
@@ -29,7 +29,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -48,7 +48,7 @@ interface Goal {
   metric: string;
   target_value: number;
   current_value: number;
-  deadline: string;
+  target_date: string;
   start_date: string;
   is_completed: boolean;
   is_active: boolean;
@@ -89,18 +89,18 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
   const router = useRouter();
   const resolvedParams = React.use(params);
   const id = resolvedParams.id;
-  
+
   const [goal, setGoal] = useState<GoalWithExtras | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
-  
+
   // New log form state
   const [newLogValue, setNewLogValue] = useState<number>(0);
   const [newLogNotes, setNewLogNotes] = useState<string>('');
   const [isSubmittingLog, setIsSubmittingLog] = useState(false);
-  
+
   // New milestone form state
   const [newMilestone, setNewMilestone] = useState({
     title: '',
@@ -115,7 +115,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
     const fetchGoalData = async () => {
       try {
         setIsLoading(true);
-        
+
         // Fetch the goal
         const { data: goalData, error: goalError } = await supabase
           .from('goals')
@@ -147,18 +147,23 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
           .order('log_date', { ascending: false });
 
         if (logsError) throw logsError;
-
+        console.log("goal data", goalData, logsData)
+        goalData.current_value = (() => {
+          let total = 0;
+          for(const log of logsData) total += log.value;
+          return total
+        })();
         // Calculate progress percentage
-        const progressPercentage = goalData.target_value > 0 
-          ? Math.min(100, Math.round((goalData.current_value / goalData.target_value) * 100)) 
+        const progressPercentage = goalData.target_value > 0
+          ? Math.min(100, Math.round((goalData.current_value / goalData.target_value) * 100))
           : 0;
-        
+
         // Calculate days remaining
-        const deadlineDate = new Date(goalData.deadline);
+        const deadlineDate = new Date(goalData.target_date);
         const today = new Date();
         const timeDiff = deadlineDate.getTime() - today.getTime();
         const daysRemaining = Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
-        
+        console.log("days", daysRemaining)
         // Initialize form with current value
         setNewLogValue(goalData.current_value);
 
@@ -170,13 +175,13 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
           days_remaining: daysRemaining
         });
       } catch (error) {
-        // Silent error handling for production
+        console.error(error)
         toast({
           title: "Error",
           description: "Failed to load goal details",
           variant: "destructive"
         });
-        router.push('/goals');
+        // router.push('/goals');
       } finally {
         setIsLoading(false);
       }
@@ -188,14 +193,14 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
   const handleDeleteGoal = async () => {
     try {
       setIsDeleting(true);
-      
+
       const { error } = await supabase
         .from('goals')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
-      
+
       toast({
         title: "Success",
         description: "Goal deleted successfully"
@@ -216,7 +221,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
 
   const handleLogSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (newLogValue < 0) {
       toast({
         title: "Error",
@@ -228,7 +233,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
 
     try {
       setIsSubmittingLog(true);
-      
+
       // Insert the log
       const { error } = await supabase
         .from('goal_logs')
@@ -239,13 +244,17 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
           notes: newLogNotes || null
         });
 
+      const { error: goalError } = await supabase
+          .from('goals').update({'current_value': (goal?.current_value || 0) + newLogValue}).eq('id', goal?.id)
+
+      if(goalError) throw goalError;
       if (error) throw error;
-      
+
       toast({
         title: "Success",
         description: "Progress logged successfully!"
       });
-      
+
       // Refresh the page to update data
       window.location.reload();
     } catch (error) {
@@ -262,7 +271,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
 
   const handleMilestoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newMilestone.title) {
       toast({
         title: "Error",
@@ -283,7 +292,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
 
     try {
       setIsSubmittingMilestone(true);
-      
+
       // Insert the milestone
       const { error } = await supabase
         .from('goal_milestones')
@@ -297,12 +306,12 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
         });
 
       if (error) throw error;
-      
+
       toast({
         title: "Success",
         description: "Milestone added successfully!"
       });
-      
+
       // Reset form and hide it
       setNewMilestone({
         title: '',
@@ -311,7 +320,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
         target_value: 0,
       });
       setShowMilestoneForm(false);
-      
+
       // Refresh the page to update data
       window.location.reload();
     } catch (error) {
@@ -334,15 +343,15 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
         .eq('id', milestone.id);
 
       if (error) throw error;
-      
+
       // Update the local state without a full refresh
       if (goal) {
-        const updatedMilestones = goal.milestones.map(m => 
+        const updatedMilestones = goal.milestones.map(m =>
           m.id === milestone.id ? { ...m, is_completed: !m.is_completed } : m
         );
         setGoal({ ...goal, milestones: updatedMilestones });
       }
-      
+
       toast({
         title: "Success",
         description: `Milestone marked as ${milestone.is_completed ? 'incomplete' : 'complete'}`
@@ -369,7 +378,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="container py-8">
         <p>Goal not found</p>
-        <Button 
+        <Button
           onClick={() => router.push('/goals')}
           className="mt-4"
         >
@@ -387,19 +396,19 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
     return 'bg-red-500';
   };
 
-  const deadlineDate = new Date(goal.deadline);
+  const deadlineDate = new Date(goal.target_date);
   const startDate = new Date(goal.start_date);
-  
-  const formattedDeadline = new Intl.DateTimeFormat('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+
+  const formattedDeadline = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   }).format(deadlineDate);
-  
-  const formattedStartDate = new Intl.DateTimeFormat('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+
+  const formattedStartDate = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   }).format(startDate);
 
   return (
@@ -440,8 +449,8 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
               Edit
             </Button>
           </Link>
-          <Button 
-            variant="destructive" 
+          <Button
+            variant="destructive"
             size="sm"
             onClick={() => setShowDeleteDialog(true)}
           >
@@ -495,10 +504,9 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
       <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="milestones">Milestones</TabsTrigger>
           <TabsTrigger value="logs">Progress Logs</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="overview" className="space-y-6">
           <Card>
             <CardHeader>
@@ -509,8 +517,8 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
               <form onSubmit={handleLogSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="current-value">Current Value ({goal.metric})</Label>
-                  <Input 
-                    id="current-value" 
+                  <Input
+                    id="current-value"
                     type="number"
                     step="0.01"
                     value={newLogValue}
@@ -519,8 +527,8 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="notes">Notes (Optional)</Label>
-                  <Textarea 
-                    id="notes" 
+                  <Textarea
+                    id="notes"
                     placeholder="Any thoughts on your progress?"
                     value={newLogNotes}
                     onChange={(e) => setNewLogNotes(e.target.value)}
@@ -532,7 +540,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
               </form>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Goal Details</CardTitle>
@@ -556,45 +564,9 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
                   <p>{goal.is_completed ? "Completed" : goal.is_active ? "Active" : "Inactive"}</p>
                 </div>
               </div>
-              
+
               <Separator />
-              
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2">Milestones</h4>
-                {goal.milestones.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No milestones set</p>
-                ) : (
-                  <div className="space-y-2">
-                    {goal.milestones.slice(0, 3).map((milestone) => (
-                      <div key={milestone.id} className="flex items-start">
-                        {milestone.is_completed ? (
-                          <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-2 flex-shrink-0" />
-                        ) : (
-                          <XCircle className="h-5 w-5 text-muted-foreground mt-0.5 mr-2 flex-shrink-0" />
-                        )}
-                        <div>
-                          <p className="font-medium">{milestone.title}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Target: {milestone.target_value} {goal.metric} by {new Date(milestone.target_date).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    {goal.milestones.length > 3 && (
-                      <Button 
-                        variant="link" 
-                        onClick={() => setActiveTab('milestones')}
-                        className="p-0 h-auto"
-                      >
-                        View all {goal.milestones.length} milestones
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-              
-              <Separator />
-              
+
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-2">Recent Progress</h4>
                 {goal.logs.length === 0 ? (
@@ -613,8 +585,8 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
                       </div>
                     ))}
                     {goal.logs.length > 3 && (
-                      <Button 
-                        variant="link" 
+                      <Button
+                        variant="link"
                         onClick={() => setActiveTab('logs')}
                         className="p-0 h-auto"
                       >
@@ -627,138 +599,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
             </CardContent>
           </Card>
         </TabsContent>
-        
-        <TabsContent value="milestones" className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <div>
-                <CardTitle>Milestones</CardTitle>
-                <CardDescription>Break your goal into smaller achievements</CardDescription>
-              </div>
-              <Button onClick={() => setShowMilestoneForm(!showMilestoneForm)}>
-                <PlusIcon className="h-4 w-4 mr-2" />
-                {showMilestoneForm ? "Cancel" : "Add Milestone"}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {showMilestoneForm && (
-                <form onSubmit={handleMilestoneSubmit} className="space-y-4 mb-6 p-4 border rounded-md">
-                  <div className="space-y-2">
-                    <Label htmlFor="milestone-title">Title *</Label>
-                    <Input 
-                      id="milestone-title" 
-                      placeholder="e.g., Reach halfway point"
-                      value={newMilestone.title}
-                      onChange={(e) => setNewMilestone({...newMilestone, title: e.target.value})}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="milestone-description">Description (Optional)</Label>
-                    <Textarea 
-                      id="milestone-description" 
-                      placeholder="Details about this milestone"
-                      value={newMilestone.description}
-                      onChange={(e) => setNewMilestone({...newMilestone, description: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="milestone-target">Target Value *</Label>
-                      <Input 
-                        id="milestone-target" 
-                        type="number"
-                        step="0.01"
-                        placeholder={`In ${goal.metric}`}
-                        value={newMilestone.target_value}
-                        onChange={(e) => setNewMilestone({...newMilestone, target_value: parseFloat(e.target.value) || 0})}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="milestone-date">Target Date *</Label>
-                      <Input 
-                        id="milestone-date" 
-                        type="date"
-                        value={newMilestone.target_date}
-                        onChange={(e) => setNewMilestone({...newMilestone, target_date: e.target.value})}
-                        min={new Date().toISOString().split('T')[0]}
-                        max={goal.deadline.split('T')[0]}
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <Button type="submit" disabled={isSubmittingMilestone}>
-                    {isSubmittingMilestone ? "Saving..." : "Save Milestone"}
-                  </Button>
-                </form>
-              )}
-              
-              {goal.milestones.length === 0 && !showMilestoneForm ? (
-                <div className="text-center py-12">
-                  <Milestone className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold">No milestones yet</h3>
-                  <p className="text-muted-foreground">Break down your goal into smaller milestones to track progress</p>
-                  <Button 
-                    onClick={() => setShowMilestoneForm(true)}
-                    className="mt-4"
-                  >
-                    Add Your First Milestone
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {goal.milestones.map((milestone) => (
-                    <Card key={milestone.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className={`mt-0.5 ${milestone.is_completed ? 'text-green-500' : 'text-muted-foreground'}`}
-                            onClick={() => toggleMilestoneStatus(milestone)}
-                          >
-                            {milestone.is_completed ? (
-                              <CheckCircle className="h-5 w-5" />
-                            ) : (
-                              <XCircle className="h-5 w-5" />
-                            )}
-                          </Button>
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                              <h3 className="font-medium">{milestone.title}</h3>
-                              <Badge variant={milestone.is_completed ? "default" : "outline"}>
-                                {milestone.is_completed ? "Completed" : "In Progress"}
-                              </Badge>
-                            </div>
-                            {milestone.description && (
-                              <p className="text-sm text-muted-foreground mt-1">{milestone.description}</p>
-                            )}
-                            <div className="flex justify-between mt-2 text-sm">
-                              <span>Target: {milestone.target_value} {goal.metric}</span>
-                              <span>
-                                Due: {new Date(milestone.target_date).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <Progress 
-                              value={goal.current_value >= milestone.target_value ? 100 : Math.min(100, (goal.current_value / milestone.target_value) * 100)} 
-                              className={`mt-2 ${milestone.is_completed ? 'bg-green-500' : ''}`}
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
+
         <TabsContent value="logs" className="space-y-6">
           <Card>
             <CardHeader>
@@ -773,7 +614,7 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
                   <p className="text-muted-foreground">
                     Start logging your progress to track your journey toward your goal
                   </p>
-                  <Button 
+                  <Button
                     onClick={() => setActiveTab('overview')}
                     className="mt-4"
                   >
@@ -802,8 +643,8 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
               )}
             </CardContent>
             <CardFooter>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={() => setActiveTab('overview')}
               >
@@ -824,8 +665,8 @@ export default function GoalDetailPage({ params }: { params: Promise<{ id: strin
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteGoal} 
+            <AlertDialogAction
+              onClick={handleDeleteGoal}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
