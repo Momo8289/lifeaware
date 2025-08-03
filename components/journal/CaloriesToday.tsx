@@ -72,7 +72,7 @@ function CaloriesToday(){
 const chartData = useCaloriesData();
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">
         <CardTitle>Calories</CardTitle>
         <CardDescription>Eaten Today</CardDescription>
@@ -98,7 +98,7 @@ const chartData = useCaloriesData();
             />
             <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
 
-            <RadialBar dataKey="percent" background cornerRadius={10} fill="#74D4FF" />
+            <RadialBar dataKey="percent" background cornerRadius={10} fill="#C4B4FF" />
             <PolarRadiusAxis 
             tick={false} 
             tickLine={false} 
@@ -142,7 +142,7 @@ const chartData = useCaloriesData();
           Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
         </div> */}
         <div className="text-muted-foreground leading-none text-center">
-          The average adult should consumer between 2000kcal and 25000kcal a day.
+          The average adult should consume between 2000kcal and 25000kcal a day.
         </div>
       </CardFooter>
     </Card>
