@@ -5,8 +5,8 @@ import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useTheme } from "next-themes"
-import { useAppearanceSettings } from "@/hooks/use-appearance-settings"
-import {concatClasses} from "@/utils/helpers";
+import { useAppearanceSettings } from "hooks/use-appearance-settings"
+import {concatClasses} from "utils/helpers";
 
 export interface Theme {
   name: string

@@ -1,5 +1,4 @@
 import { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
-
 /**
  * Creates a robust Supabase Realtime channel subscription with retry capabilities
  * 
@@ -75,9 +74,7 @@ export function createRobustSubscription(
       // Subscribe with error handling
       channel.subscribe(status => {
    
-
         if (isCleanedUp) return;
-
         if (status === 'SUBSCRIBED') {
           // Reset retry count on successful subscription
           retryCount = 0;
@@ -109,13 +106,11 @@ export function createRobustSubscription(
   return () => {
     isCleanedUp = true
    
-
     if (retryTimeout) {
      
       clearTimeout(retryTimeout)
       
     }
-
     if (channel) {
       try {
       

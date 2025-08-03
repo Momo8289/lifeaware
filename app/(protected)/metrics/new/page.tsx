@@ -60,6 +60,31 @@ export default function NewMetricPage() {
     is_active: true,
   });
 
+  const handleValueTypeChange = (type: 'number' | 'bloodpressure' | 'bloodsugar') => {
+    handleChange('value_type' , type);
+
+  //data for optional normal range section based on value_type selection
+   switch(type){
+    case('number'):
+      
+      handleChange('normal_range_min', '50');
+      handleChange('normal_range_max', '100');
+      break;
+    
+    case('bloodpressure'):
+
+      handleChange('normal_range_min', '90');
+      handleChange('normal_range_max', '120');
+      break;
+    
+    case('bloodsugar'):
+
+      handleChange('normal_range_min', '70');
+      handleChange('normal_range_max', '130');
+      break;
+    
+   }
+  }
   const handleChange = (field: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -110,12 +135,11 @@ export default function NewMetricPage() {
           description: formData.description,
           unit: formData.unit,
           value_type: formData.value_type,
-          normal_range_min,
-          normal_range_max,
+          base_min: normal_range_min,
+          base_max: normal_range_max,
           target_min,
           target_max,
           is_active: formData.is_active,
-          is_custom: true,
         })
         .select();
 
@@ -131,6 +155,7 @@ export default function NewMetricPage() {
       router.push('/metrics');
     } catch (error: any) {
       // Silent error handling for production
+      console.error(error)
       toast({
         title: "Error",
         description: typeof error === 'object' && error.message 
@@ -190,7 +215,7 @@ export default function NewMetricPage() {
                 <Label htmlFor="value-type">Value Type *</Label>
                 <Select 
                   value={formData.value_type} 
-                  onValueChange={(value) => handleChange('value_type', value)}
+                  onValueChange={(value) => handleValueTypeChange(value as FormData['value_type'])}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select value type" />
@@ -231,9 +256,16 @@ export default function NewMetricPage() {
             
             <div className="space-y-2">
               <Label>Normal Range (Optional)</Label>
-              <p className="text-sm text-muted-foreground mb-2">
-                Set the normal/healthy range for this metric based on medical guidelines
-              </p>
+              
+                {formData.value_type=== "number" && ( 
+                <p className="text-sm text-muted-foreground mb-2">Tracks a single numeric value (e.g., weight, steps).</p>
+                )}
+               {formData.value_type=== "bloodpressure" && ( 
+                <p className="text-sm text-muted-foreground mb-2">Tracks systolic and diastolic blood pressure readings.</p>
+                )}
+                 {formData.value_type=== "bloodsugar" && ( 
+                <p className="text-sm text-muted-foreground mb-2">Tracks blood sugar levels (e.g., mg/dL or mmol/L).</p>
+                )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="normal-min" className="sr-only">Minimum normal value</Label>

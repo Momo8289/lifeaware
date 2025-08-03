@@ -144,7 +144,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         if (error) throw error;
         setReminderCount(count || 0);
       } catch (error) {
-       // console.warn("[Sidebar] Reminder fetch failed", error);
+        console.error('Failed to load reminder count:', error);
+        setReminderCount(0); // Fallback so UI doesn't break
+
       }
     };
 
@@ -180,6 +182,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           fetchReminderCount,
           'status=eq.active'
         );
+
         if (!intervalId){
         // Add manual refresh interval as a fallback
          intervalId = setInterval(()=> {

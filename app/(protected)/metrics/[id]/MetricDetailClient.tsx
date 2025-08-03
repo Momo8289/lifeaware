@@ -22,8 +22,8 @@ interface MetricTemplate {
   description: string | null;
   unit: string;
   value_type: 'number' | 'bloodpressure' | 'bloodsugar';
-  normal_range_min: number | null;
-  normal_range_max: number | null;
+  base_min: number | null;
+  base_max: number | null;
   target_min: number | null;
   target_max: number | null;
   is_active: boolean;
@@ -35,7 +35,7 @@ interface MetricTemplate {
 interface MetricLog {
   id: string;
   metric_template_id: string;
-  measurement_date: string;
+  recorded_at: string;
   value_numeric: number | null;
   value_systolic: number | null;
   value_diastolic: number | null;
@@ -51,9 +51,8 @@ interface FormData {
   value_systolic: string;
   value_diastolic: string;
   value_bloodsugar: string;
-  context: string;
   notes: string;
-  measurement_date: Date;
+  recorded_at: Date;
 }
 
 export default function MetricDetailClient({ id }: { id: string }) {
@@ -70,9 +69,8 @@ export default function MetricDetailClient({ id }: { id: string }) {
     value_systolic: '',
     value_diastolic: '',
     value_bloodsugar: '',
-    context: '',
     notes: '',
-    measurement_date: new Date()
+    recorded_at: new Date()
   });
 
   const fetchMetric = async () => {
@@ -129,9 +127,8 @@ export default function MetricDetailClient({ id }: { id: string }) {
         .from('metric_logs')
         .select('*')
         .eq('metric_template_id', id)
-        .gte('measurement_date', startOfDay(startDate).toISOString())
-        .lte('measurement_date', endOfDay(new Date()).toISOString())
-        .order('measurement_date', { ascending: true });
+        .gte('recorded_at', startOfDay(startDate).toISOString())
+        .order('recorded_at', { ascending: true });
 
       if (logsError) throw logsError;
       
@@ -202,12 +199,11 @@ export default function MetricDetailClient({ id }: { id: string }) {
         .from('metric_logs')
         .insert({
           metric_template_id: metric.id,
-          measurement_date: formData.measurement_date.toISOString(),
+          recorded_at: formData.recorded_at.toISOString(),
           value_numeric,
           value_systolic,
           value_diastolic,
           value_bloodsugar,
-          context: formData.context || null,
           notes: formData.notes || null
         });
 
@@ -224,9 +220,8 @@ export default function MetricDetailClient({ id }: { id: string }) {
         value_systolic: '',
         value_diastolic: '',
         value_bloodsugar: '',
-        context: '',
         notes: '',
-        measurement_date: new Date()
+        recorded_at: new Date()
       });
       
       // Refresh logs
@@ -307,7 +302,7 @@ export default function MetricDetailClient({ id }: { id: string }) {
     if (!logs.length) return [];
     
     return logs.map(log => {
-      const date = format(new Date(log.measurement_date), 'MMM d');
+      const date = format(new Date(log.recorded_at), 'MMM d');
       
       if (metric?.value_type === 'number') {
         return {
@@ -335,9 +330,9 @@ export default function MetricDetailClient({ id }: { id: string }) {
     if (!metric || value === null) return 'text-muted-foreground';
     
     // Check against normal range if available
-    if (metric.normal_range_min !== null && metric.normal_range_max !== null) {
-      if (value < metric.normal_range_min) return 'text-yellow-500';
-      if (value > metric.normal_range_max) return 'text-destructive';
+    if (metric.base_min !== null && metric.base_max !== null) {
+      if (value < metric.base_min) return 'text-yellow-500';
+      if (value > metric.base_max) return 'text-destructive';
       return 'text-green-500';
     }
     
@@ -497,10 +492,10 @@ export default function MetricDetailClient({ id }: { id: string }) {
                   <div>{metric.value_type.charAt(0).toUpperCase() + metric.value_type.slice(1)}</div>
                 </div>
                 
-                {metric.normal_range_min !== null && metric.normal_range_max !== null && (
+                {metric.base_min !== null && metric.base_max !== null && (
                   <div>
                     <div className="text-sm font-medium">Normal Range</div>
-                    <div>{metric.normal_range_min} - {metric.normal_range_max} {metric.unit}</div>
+                    <div>{metric.base_min} - {metric.base_max} {metric.unit}</div>
                   </div>
                 )}
                 
@@ -546,7 +541,7 @@ export default function MetricDetailClient({ id }: { id: string }) {
                     </div>
                     
                     <div className="text-sm text-muted-foreground">
-                      Last measured: {format(new Date(logs[logs.length - 1].measurement_date), 'MMMM d, yyyy')}
+                      Last measured: {format(new Date(logs[logs.length - 1].recorded_at), 'MMMM d, yyyy')}
                     </div>
                   </>
                 ) : (
@@ -661,10 +656,24 @@ export default function MetricDetailClient({ id }: { id: string }) {
             <CardContent>
               <form id="log-form" onSubmit={handleSubmitLog} className="space-y-6">
                 <div className="space-y-2">
-                  <Label>Date and Time</Label>
+                  <Label>Date</Label>
                   <DatePicker
-                    date={formData.measurement_date}
-                    setDate={(date) => date && handleChange('measurement_date', date)}
+                    date={formData.recorded_at}
+                    setDate={(date) => date && handleChange('recorded_at', date)}
+                  />
+                  <p>{formData.recorded_at.toLocaleString()}</p>
+                  <Label htmlFor="time">Time</Label>
+                  <Input
+                      id="time"
+                      type="time"
+                      value={`${formData.recorded_at.getHours()}:${formData.recorded_at.getMinutes()}`}
+                      onChange={(e) => {
+                        if(!e.target.value) return;
+                        const newDate = new Date(formData.recorded_at.getTime())
+                        newDate.setHours(parseInt(e.target.value.split(":")[0]))
+                        newDate.setMinutes(parseInt(e.target.value.split(":")[1]))
+                        handleChange("recorded_at", newDate)
+                      }}
                   />
                 </div>
                 
@@ -729,16 +738,6 @@ export default function MetricDetailClient({ id }: { id: string }) {
                 )}
                 
                 <div className="space-y-2">
-                  <Label htmlFor="context">Context (Optional)</Label>
-                  <Input
-                    id="context"
-                    placeholder="e.g., Morning, Fasting, After meal"
-                    value={formData.context}
-                    onChange={(e) => handleChange('context', e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
                   <Label htmlFor="notes">Notes (Optional)</Label>
                   <Textarea
                     id="notes"
@@ -780,8 +779,8 @@ export default function MetricDetailClient({ id }: { id: string }) {
                         <div>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{format(new Date(log.measurement_date), 'MMMM d, yyyy')}</span>
-                            <span className="text-sm text-muted-foreground">{format(new Date(log.measurement_date), 'h:mm a')}</span>
+                            <span className="font-medium">{format(new Date(log.recorded_at), 'MMMM d, yyyy')}</span>
+                            <span className="text-sm text-muted-foreground">{format(new Date(log.recorded_at), 'h:mm a')}</span>
                           </div>
                           
                           <div className="mt-2 text-xl font-bold">

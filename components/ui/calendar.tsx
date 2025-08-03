@@ -11,7 +11,7 @@ import {
   useDayPicker,
   type DayPickerProps,
 } from "react-day-picker"
-import {concatClasses} from "@/utils/helpers";
+import {concatClasses} from "utils/helpers";
 
 export type CalendarProps = DayPickerProps & {
   /**

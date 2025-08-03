@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/utils/supabase/client';
+import { supabase } from 'utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -203,6 +203,7 @@ export function NewHabitModal({ open, onOpenChange, onHabitCreated }: NewHabitMo
       onHabitCreated(data && data[0]);
       onOpenChange(false);
     } catch (error: any) {
+      console.error('Failed to create habit in modal:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to create habit",
