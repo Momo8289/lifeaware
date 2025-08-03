@@ -14,7 +14,7 @@ interface FoodItem {
   foodCategory: string;
   foodNutrients: Nutrient[];
 }
-//nutrients for future features! show macros and whatnot
+
 interface Nutrient{
     foodNutrientId: number;
     foodNutrientSourceDescription: string;
