@@ -127,11 +127,12 @@ function WaterDrunk() {
           </RadialBarChart>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex-col gap-2 text-sm">
+      <CardFooter className="flex-col gap-2 text-sm"> 
+       <Button onClick={handleAddWater}>+ 250ml</Button>
         <div className="text-muted-foreground text-center">
           The average adult should consume between 1500ml and 2000ml a day.
         </div>
-        <Button onClick={handleAddWater}>+ 250ml</Button>
+      
       </CardFooter>
     </Card>
   )

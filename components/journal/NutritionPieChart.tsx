@@ -67,7 +67,7 @@ export default function NutritionPieChart() {
 
   return (
     <Card className="flex flex-col h-full">
-      <CardHeader>
+      <CardHeader className="items-center pb-0">
         <CardTitle>Nutrient Breakdown</CardTitle>
       </CardHeader>
       <CardContent className="h-full">
@@ -89,6 +89,12 @@ export default function NutritionPieChart() {
           </PieChart>
         </ResponsiveContainer>
       </CardContent>
+      <CardFooter className="flex-col gap-2 text-sm"> 
+      <div className="text-muted-foreground leading-none text-center">
+        Breakdown of todays consumed protein, carboydrates, and fats.
+     </div>
+      </CardFooter>
+
     </Card>
   );
 }
