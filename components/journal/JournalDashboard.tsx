@@ -10,45 +10,22 @@ import {
   } from "recharts";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import {useState, useEffect} from 'react';
+import { useJournalData } from "@/lib/hooks/useJournalData";
 
-//retrieve session data a nd display food journal stats. 
-//note to future devs: This feature should be ultimately integrated into the SupaBase with 
-//a proper data table creates for storage of meal data
-
-export function getFoodJournalData(){
-    //retrieve the data 
-
-    const [data, setData] = useState([]);
-
-    useEffect(() => {
-        const rawData = JSON.parse(sessionStorage.getItem("foodJournal") || "[]");
-        const transformedData = rawData.map((entry : any) => {
-            //make date string readable
-            const date = new Date(entry.date).toISOString().split("T")[0];
-            //declare calories(cals), protein(prots) and carbs
-            let cals =0, prots = 0, carbs = 0;
-            //assign them values
-            entry.meal?.forEach((food : any) => {
-                food.foodNutrients?.forEach((n: any) => {
-                    if (n.nutrientName === "Energy") cals += n.value;
-                    if (n.nutrientName === "Protein") prots += n.value;
-                    if (n.nutrientName === "Carbohydrate, by difference") carbs += n.value;    
-                });
-            });
-
-            return {date, cals, prots, carbs}
-        });
-
-        setData(transformedData);
-        //or return an empty string
-    }, []);
-
-    return data;
-}
 
 //component to render chart
 function JournalDashboard(){
-const chartData = getFoodJournalData();
+//const chartData = getFoodJournalData();
+const { data: chartData, loading, error } = useJournalData();
+
+if (loading) {
+  return <p>Loading journal data...</p>;
+}
+
+if (error) {
+  return <p className="text-red-500">Error: {error}</p>;
+}
+
 
 return (
     <Card className="mt-6">
