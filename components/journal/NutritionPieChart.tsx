@@ -11,60 +11,55 @@ import {
 import {
     Card,
     CardContent,
-    CardDescription,
     CardFooter,
     CardHeader,
     CardTitle,
   } from "@/components/ui/card"
 import { useEffect, useState } from "react";
+import { useJournalData } from "@/lib/hooks/useJournalData";
+import type { JournalData } from "@/lib/hooks/useJournalData";
 
 // Nutrients we care about
-const trackedNutrients = ["Protein", "Carbohydrate, by difference", "Total lipid (fat)"];
+const trackedNutrients = [
+  "Protein",
+  "Carbohydrate, by difference",
+  "Total lipid (fat)",
+];
 
 // Colors for the chart slices
 const COLORS = ["#74D4FF", "#FFA500", "#8BC34A"];
 
 export default function NutritionPieChart() {
-  const [chartData, setChartData] = useState<
-    { name: string; value: number }[]
-  >([]);
-
+  const [chartData, setChartData] = useState<{ name: string; value: number }[]>(
+    []
+  );
+  const { data: journalData } = useJournalData();
   useEffect(() => {
-    const rawData = JSON.parse(sessionStorage.getItem("foodJournal") || "[]");
     const today = new Date().toISOString().split("T")[0];
-
-    const todayEntries = rawData.filter((entry: any) => {
-      const entryDate = new Date(entry.date).toISOString().split("T")[0];
-      return entryDate === today;
+  
+    const todaysEntries = journalData.filter(
+      (entry: JournalData) => entry.date === today
+    );
+  
+    let proteinTotal = 0;
+    let carbTotal = 0;
+    let fatTotal = 0;
+  
+    todaysEntries.forEach((entry) => {
+      proteinTotal += entry.prots || 0;
+      carbTotal += entry.carbs || 0;
+      // If you later add fat field: fatTotal += entry.fats || 0;
     });
-
-    const nutrientTotals: Record<string, number> = {};
-
-    todayEntries.forEach((entry: any) => {
-      entry.meal?.forEach((food: any) => {
-        food.foodNutrients?.forEach((n: any) => {
-          if (trackedNutrients.includes(n.nutrientName)) {
-            nutrientTotals[n.nutrientName] =
-              (nutrientTotals[n.nutrientName] || 0) + n.value;
-          }
-        });
-      });
-    });
-
-    const formattedData = trackedNutrients.map((name) => ({
-        name:
-          name === "Carbohydrate, by difference"
-            ? "Carbohydrates"
-            : name === "Total lipid (fat)"
-            ? "Fat"
-            : name,
-        value: Math.round(nutrientTotals[name] || 0),
-      }));
-      
-
+  
+    const formattedData = [
+      { name: "Protein", value: Math.round(proteinTotal) },
+      { name: "Carbohydrates", value: Math.round(carbTotal) },
+      { name: "Fat", value: Math.round(fatTotal) },
+    ];
+  
     setChartData(formattedData);
-  }, []);
-
+  }, [journalData]);
+  
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">

@@ -20,42 +20,37 @@ import {
 } from "@/components/ui/card"
 import { ChartConfig, ChartContainer } from "@/components/ui/chart"
 import {useState, useEffect} from 'react';
+import { useJournalData } from "@/lib/hooks/useJournalData";
+import type { JournalData } from "@/lib/hooks/useJournalData";
+
 
 
 export const description = "A radial chart of calorific date taken from today's Journal entries."
 
 
- function useCaloriesData(){
-    //retrieve the data 
+function useCaloriesData() {
+  const [data, setData] = useState<{ name: string; calories: number; percent: number }[]>([]);
+  const { data: rawData } = useJournalData(); // ✅ use rawData here
 
-    const [data, setData] = useState<{ name: string; calories: number; percent: number }[]>([])
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
 
-    useEffect(() => {
-        const rawData = JSON.parse(sessionStorage.getItem("foodJournal") || "[]")
-    
-        let totalCalories = 0
-        rawData.forEach((entry: any) => {
-          const entryDate = new Date(entry.date).toISOString().split("T")[0]
-          const today = new Date().toISOString().split("T")[0]
-    
-          if (entryDate === today) {
-            entry.meal?.forEach((food: any) => {
-              food.foodNutrients?.forEach((n: any) => {
-                if (n.nutrientName === "Energy") {
-                  totalCalories += n.value
-                }
-              })
-            })
-          }
-        })
-        const percent = Math.min((totalCalories / DAILY_GOAL) * 100, 100) // Cap at 100%
+    // Filter all today's entries
+    const todaysEntries = rawData.filter((entry) => entry.date === today);
 
-        setData([{ name: "Calories", calories: totalCalories, percent }])
-        console.log(percent);
-    }, [])
+    //  Sum calories across all today's entries
+    const totalCalories = todaysEntries.reduce((sum, entry) => sum + (entry.cals || 0), 0);
 
-    return data;
+    // Cap at 100%
+    const percent = Math.min((totalCalories / DAILY_GOAL) * 100, 100);
+
+    setData([{ name: "Calories", calories: totalCalories, percent }]);
+  }, [rawData]);
+
+  return data;
 }
+
+
     
 const DAILY_GOAL = 2500;
 
@@ -142,7 +137,7 @@ const chartData = useCaloriesData();
           Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
         </div> */}
         <div className="text-muted-foreground leading-none text-center">
-          The average adult should consume between 2000kcal and 25000kcal a day.
+          The average adult should consume between 2000kcal and 2500kcal a day.
         </div>
       </CardFooter>
     </Card>

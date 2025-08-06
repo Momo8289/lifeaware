@@ -1,12 +1,24 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
-interface JournalData {
+//for now just for dash display but could retrieve more 
+export interface JournalData {
   date: string;
   cals: number;
   prots: number;
   carbs: number;
+  meal?: Food[];
 }
+export type FoodNutrient = {
+    nutrientName: string;
+    value: number;
+  };
+  
+  export type Food = {
+    foodNutrients: FoodNutrient[];
+  };
+  
+  
 
 export function useJournalData() {
     const [data, setData] = useState<JournalData[]>([]);
