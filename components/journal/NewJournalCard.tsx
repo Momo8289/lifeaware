@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { DatePicker } from "../ui/date-picker";
-import { setMinutes } from "date-fns";
+import { saveMealToSupabase } from "@/lib/supabase/meal";
+
 
 interface FoodItem {
   fdcId: string;
@@ -112,7 +113,7 @@ function NewJournalCard() {
 
     const fetchFoods = async () => {
       const response = await fetch(
-        `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(
+        `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=frDJLeme4MAniWJqR0yFB9DELI5k2IVoD4cJbH0y&query=${encodeURIComponent(
           query
         )}`
       );
@@ -226,39 +227,29 @@ function NewJournalCard() {
       </CardContent>
     </Card>
     <div className="flex justify-between p-2">
-    <Button
-  onClick={() => {
-    const newEntry = {
-      meal,
-      date,
-      hour,
-      minute,
-      ampm,
-      mealType,
-    };
+  <Button
+  onClick={async () => {
+    try {
+      await saveMealToSupabase({
+        meal,
+        date: date!,
+        hour,
+        minute,
+        ampm,
+        mealType,
+      });
 
-    const existing = sessionStorage.getItem("foodJournal");
-
-    let journal: any[] = [];
-
-    if (existing) {
-      try {
-        const parsed = JSON.parse(existing);
-        journal = Array.isArray(parsed) ? parsed : [parsed]; // force array
-      } catch (e) {
-        console.error("Could not parse existing foodJournal:", e);
-      }
+      alert("Meal saved to Supabase!");
+      resetFields();
+    } catch (e: any) {
+      console.error("Error saving meal:", e);
+      alert("Something went wrong: " + e.message);
     }
-
-    journal.push(newEntry);
-
-    sessionStorage.setItem("foodJournal", JSON.stringify(journal));
-
-    console.log("Meal saved!", journal);
   }}
 >
   Save Meal
 </Button>
+
 
 <Button  variant="secondary" onClick={resetFields}>New Meal</Button>
 </div>
