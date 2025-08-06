@@ -20,6 +20,8 @@ import {
 import { ChartConfig, ChartContainer } from "@/components/ui/chart"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
+import { saveWaterToSupabase } from "@/lib/supabase/water"; // adjust path as needed
+
 
 const DAILY_GOAL_MAX = 2000
 const DAILY_GOAL_MIN = 1500
@@ -55,9 +57,17 @@ function WaterDrunk() {
     },
   ]
 
-  const handleAddWater = () => {
-    setWaterDrunk((prev) => prev + 250)
-  }
+  const handleAddWater = async () => {
+    const newAmount = waterDrunk + 250;
+    setWaterDrunk(newAmount);
+  
+    try {
+      await saveWaterToSupabase(newAmount);
+      console.log("Water saved to Supabase:", newAmount);
+    } catch (error) {
+      console.error("Failed to save water:", error);
+    }
+  };
 
   return (
     <Card className="flex flex-col">

@@ -21,7 +21,6 @@ import {
 import { ChartConfig, ChartContainer } from "@/components/ui/chart"
 import {useState, useEffect} from 'react';
 import { useJournalData } from "@/lib/hooks/useJournalData";
-import type { JournalData } from "@/lib/hooks/useJournalData";
 
 
 
